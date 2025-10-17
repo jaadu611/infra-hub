@@ -2,7 +2,7 @@ import User from "@/models/User";
 import { connectDB } from "./mongodb";
 import crypto from "crypto";
 import Project from "@/models/Project";
-import Document from "@/models/Docs";
+import DocumentModel from "@/models/Docs";
 
 // ------------------ Types ------------------
 
@@ -13,19 +13,23 @@ export interface Member {
   role?: "admin" | "editor" | "viewer";
 }
 
-export interface Project {
+export interface ProjectDoc {
   _id: string;
   name: string;
   members?: Member[];
+  documents?: Document[];
   createdAt: string;
 }
 
 export interface Document {
-  createdAt: string;
-  name: string;
-  addedBy: any;
   _id: string;
-  title: string;
+  name: string;
+  title?: string;
+  addedBy?: string;
+  createdAt?: string;
+  content?: string;
+  ownerId?: string;
+  projectId?: string;
 }
 
 export interface APIRequest {
@@ -47,12 +51,12 @@ export interface UserType {
   role: "admin" | "editor" | "viewer";
   status: "active" | "inactive" | "pending";
   lastLogin?: Date;
-  projects?: Project[];
+  projects?: ProjectDoc[];
 }
 
 export interface DashboardData {
   user: { _id: string; name: string };
-  projects: Project[];
+  projects: ProjectDoc[];
   documents: Document[];
   apiRequests: APIRequest[];
   recentActivity: Activity[];
@@ -74,7 +78,7 @@ export interface ProjectType {
   authSecret: string;
   mongoUrl: string;
   documents?: Document[];
-  activities?: any[];
+  activities?: Activity[];
   createdAt: string;
   updatedAt: string;
 }
@@ -91,27 +95,30 @@ export async function getUserDashboardData(
       path: "projects",
       populate: [
         { path: "members", select: "name email role" },
-        { path: "documents", select: "name" }, // populate documents here
+        { path: "documents", select: "name" },
       ],
     })
     .lean();
 
   if (!user) return null;
 
-  // Map projects
-  const projects: Project[] = (user.projects ?? []).map((p: any) => ({
+  const projects: ProjectDoc[] = (user.projects ?? []).map((p) => ({
     _id: p._id.toString(),
     name: p.name,
     createdAt: p.createdAt?.toISOString() || new Date().toISOString(),
-    members: (p.members ?? []).map((m: any) => ({
+    members: (p.members ?? []).map((m) => ({
       _id: m._id.toString(),
       name: m.name,
       email: m.email,
       role: m.role,
     })),
-    documents: (p.documents ?? []).map((d: any) => ({
+    documents: (p.documents ?? []).map((d) => ({
       _id: d._id.toString(),
       title: d.name,
+      content: d.content,
+      addedBy: d.owner?.toString(),
+      createdAt: d.createdAt?.toISOString(),
+      projectId: p._id.toString(),
     })),
   }));
 
@@ -134,9 +141,7 @@ export async function deleteProject(projectId: string) {
   await connectDB();
 
   const deletedProject = await Project.findByIdAndDelete(projectId);
-  if (!deletedProject) {
-    throw new Error("Project not found");
-  }
+  if (!deletedProject) throw new Error("Project not found");
 
   await User.updateMany(
     { projects: projectId },
@@ -149,7 +154,14 @@ export async function deleteProject(projectId: string) {
 export async function deleteProjectDocuments(projectId: string) {
   await connectDB();
 
-  const result = await Document.deleteMany({ projectId });
+  const project = await Project.findById(projectId).select("documents");
+  if (!project) {
+    throw new Error("Project not found");
+  }
+
+  const result = await DocumentModel.deleteMany({
+    _id: { $in: project.documents },
+  });
 
   return { success: true, deletedCount: result.deletedCount };
 }
@@ -160,7 +172,6 @@ export async function createProjectServer(
   await connectDB();
 
   const { projectName, email, mongoUrl, authJsSecret } = data;
-
   if (!projectName || !email) throw new Error("Missing required fields");
 
   const user = await User.findOne({ email });
@@ -168,12 +179,7 @@ export async function createProjectServer(
 
   const project = await Project.create({
     name: projectName,
-    members: [
-      {
-        user: user._id,
-        role: "admin",
-      },
-    ],
+    members: [{ user: user._id, role: "admin" }],
     invitedEmails: [],
     mongoUrl: mongoUrl || "no-url",
     authSecret: authJsSecret || crypto.randomBytes(16).toString("hex"),
@@ -182,7 +188,7 @@ export async function createProjectServer(
     activities: [],
   });
 
-  // ✅ Create an initial document dynamically
+  // Initial document
   const now = new Date();
   const formattedDate = now.toLocaleString("en-US", {
     weekday: "long",
@@ -194,39 +200,11 @@ export async function createProjectServer(
     hour12: true,
   });
 
-  const initialDocName = `README - ${projectName}`;
-  const ownerName = user.name || "Project Owner";
-  const ownerEmail = user.email || "No email available";
-
-  const initialContent = `# 📘 Welcome to "${projectName}"
-
-This is the initial document for your new project.
-
----
-
-### 👤 Created By
-**${ownerName}**  
-📧 ${ownerEmail}
-
----
-
-### 🕒 Created On
-${formattedDate}
-
----
-
-### 📝 About
-This document was automatically generated when your project was created.  
-You can use it as a starting point to organize notes, ideas, or summaries related to this project.
-
-> ℹ️ Documents cannot be edited or deleted — only viewed for reference.
-`;
-
-  const initialDoc = await Document.create({
+  const initialDoc = await DocumentModel.create({
     owner: user._id,
     project: project._id,
-    name: initialDocName,
-    content: initialContent,
+    name: `README - ${projectName}`,
+    content: `# Welcome to ${projectName}\nCreated by ${user.name} on ${formattedDate}`,
   });
 
   project.documents.push(initialDoc._id);
@@ -256,29 +234,16 @@ You can use it as a starting point to organize notes, ideas, or summaries relate
 
 export async function getProjectById(id: string) {
   await connectDB();
-  let project;
 
-  try {
-    project = await Project.findById(id)
-      .populate({
-        path: "members.user",
-        select: "name email",
-      })
-      .populate({
-        path: "documents",
-        options: { sort: { createdAt: -1 }, limit: 5 },
-        populate: { path: "owner", select: "name email" },
-      });
-  } catch (err) {
-    console.error("Error fetching project:", err);
-    throw err;
-  }
+  const project = await Project.findById(id)
+    .populate({ path: "members.user", select: "name email" })
+    .populate({
+      path: "documents",
+      options: { sort: { createdAt: -1 }, limit: 5 },
+      populate: { path: "owner", select: "name email" },
+    });
 
-  if (!project) {
-    return null;
-  }
-
-  return project;
+  return project ?? null;
 }
 
 export async function inviteUserToProject(projectId: string, userId: string) {
@@ -291,7 +256,6 @@ export async function inviteUserToProject(projectId: string, userId: string) {
   if (!user) throw new Error("User not found");
 
   if (!project.invitedEmails) project.invitedEmails = [];
-
   if (!project.invitedEmails.includes(user.email)) {
     project.invitedEmails.push(user.email);
     await project.save();
@@ -303,35 +267,28 @@ export async function inviteUserToProject(projectId: string, userId: string) {
 export async function getProjectsServer(userEmail?: string) {
   await connectDB();
 
-  try {
-    let query = {};
-    if (userEmail) {
-      query = { "members.user": await getUserIdByEmail(userEmail) };
-    }
+  let query = {};
+  if (userEmail) query = { "members.user": await getUserIdByEmail(userEmail) };
 
-    const projects = await Project.find(query)
-      .populate({ path: "members.user", select: "name email role" })
-      .lean();
+  const projects = await Project.find(query)
+    .populate({ path: "members.user", select: "name email role" })
+    .lean();
 
-    return projects.map((p: any) => ({
-      _id: p._id.toString(),
-      name: p.name,
-      createdAt: p.createdAt?.toISOString() || new Date().toISOString(),
-      members: (p.members ?? []).map((m: any) => ({
-        _id: m.user?._id?.toString() ?? "",
-        name: m.user?.name ?? "Unknown",
-        email: m.user?.email ?? "Unknown",
-        role: m.role ?? "viewer",
-      })),
-      documentsCount: Array.isArray(p.documents) ? p.documents.length : 0,
-      apiKey: p.apiKey,
-      mongoUrl: p.mongoUrl,
-      authSecret: p.authSecret,
-    }));
-  } catch (err) {
-    console.error("Error fetching projects:", err);
-    throw new Error("Failed to load projects");
-  }
+  return projects.map((p) => ({
+    _id: p._id.toString(),
+    name: p.name,
+    createdAt: p.createdAt?.toISOString() || new Date().toISOString(),
+    members: (p.members ?? []).map((m) => ({
+      _id: m.user._id.toString(),
+      name: m.user.name,
+      email: m.user.email,
+      role: m.role ?? "viewer",
+    })),
+    documentsCount: Array.isArray(p.documents) ? p.documents.length : 0,
+    apiKey: p.apiKey,
+    mongoUrl: p.mongoUrl,
+    authSecret: p.authSecret,
+  }));
 }
 
 async function getUserIdByEmail(email: string) {

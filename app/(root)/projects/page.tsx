@@ -25,9 +25,12 @@ export interface Project {
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [deletingProjectIds, setDeletingProjectIds] = useState<string[]>([]);
   const { user } = useUser();
   const userEmail = user?.email;
 
+  // Fetch projects
   useEffect(() => {
     const fetchProjects = async () => {
       if (!userEmail) return;
@@ -50,7 +53,11 @@ export default function ProjectsPage() {
     fetchProjects();
   }, [userEmail]);
 
+  // Delete project
   const handleDelete = async (id: string) => {
+    if (deletingProjectIds.includes(id)) return;
+    setDeletingProjectIds((prev) => [...prev, id]);
+
     try {
       const res = await fetch(`/api/projects/delete/${id}`, {
         method: "DELETE",
@@ -59,8 +66,18 @@ export default function ProjectsPage() {
       setProjects((prev) => prev.filter((p) => p._id !== id));
     } catch (err) {
       console.error("Error deleting project:", err);
+    } finally {
+      setDeletingProjectIds((prev) => prev.filter((pid) => pid !== id));
     }
   };
+
+  // Filtered projects based on search
+  const filteredProjects =
+    search.trim() === ""
+      ? projects
+      : projects.filter((p) =>
+          p.name.toLowerCase().includes(search.toLowerCase())
+        );
 
   if (isLoading) {
     return (
@@ -71,19 +88,39 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="p-6 min-h-[80vh]">
+    <div className="p-6 h-[80vh]">
       {projects.length > 0 ? (
         <>
-          <ProjectsPageHeader
-            userEmail={userEmail}
-            onProjectCreated={(newProject: Project) =>
-              setProjects((prev) => [newProject, ...prev])
-            }
-          />
+          <div className="flex justify-center items-center gap-4 mb-4">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search projects..."
+              className="w-full p-2 rounded border border-gray-600 bg-gray-800 text-white"
+            />
+            <ProjectsPageHeader
+              userEmail={userEmail}
+              onProjectCreated={(newProject: Project) =>
+                setProjects((prev) => [newProject, ...prev])
+              }
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-            {projects.map((p) => (
-              <ProjectCard key={p._id} project={p} onDelete={handleDelete} />
+            {filteredProjects.map((p) => (
+              <ProjectCard
+                key={p._id}
+                project={{ ...p, members: p.members ?? [] }}
+                onDelete={handleDelete}
+                isDeleting={deletingProjectIds.includes(p._id)}
+              />
             ))}
+            {filteredProjects.length === 0 && (
+              <p className="text-gray-400 col-span-full text-center mt-6">
+                No projects match your search.
+              </p>
+            )}
           </div>
         </>
       ) : (

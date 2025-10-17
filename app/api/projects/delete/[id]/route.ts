@@ -25,7 +25,7 @@ export async function DELETE(
     console.error("Error deleting project:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Internal Server Error" },
-      { status: 404 } // Use 404 if project not found
+      { status: 404 }
     );
   }
 }

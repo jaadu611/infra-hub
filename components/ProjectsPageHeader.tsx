@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NewProjectModal from "./NewProjectModel";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ export default function ProjectsPageHeader({
   onProjectCreated,
 }: ProjectsPageHeaderProps) {
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   const handleFinish = async (data: {
     projectName: string;
@@ -24,6 +25,7 @@ export default function ProjectsPageHeader({
     mongoUrl?: string;
     authJsSecret?: string;
   }) => {
+    setIsCreating(true); // start loading
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
@@ -37,23 +39,35 @@ export default function ProjectsPageHeader({
       toast.success("✅ New Project Created:", newProject);
 
       onProjectCreated?.(newProject);
-
       setModalOpen(false);
     } catch (err) {
       console.error("Error creating project:", err);
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create project"
+      );
+    } finally {
+      setIsCreating(false);
     }
   };
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <Button
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold shadow-md hover:shadow-lg hover:opacity-90 transition-all"
-          onClick={() => setModalOpen(true)}
-        >
-          <Plus className="h-4 w-4" /> New Project
-        </Button>
-      </div>
+      <Button
+        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold shadow-md hover:shadow-lg hover:opacity-90 transition-all"
+        onClick={() => setModalOpen(true)}
+        disabled={isCreating} // disable button while creating
+      >
+        {isCreating ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Creating...
+          </>
+        ) : (
+          <>
+            <Plus className="h-4 w-4" /> New Project
+          </>
+        )}
+      </Button>
 
       <NewProjectModal
         isOpen={isModalOpen}

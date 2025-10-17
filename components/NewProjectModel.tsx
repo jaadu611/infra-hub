@@ -21,7 +21,7 @@ interface NewProjectModalProps {
     email: string;
     mongoUrl?: string;
     authJsSecret?: string;
-  }) => void;
+  }) => Promise<void> | void;
 }
 
 export default function NewProjectModal({
@@ -35,14 +35,13 @@ export default function NewProjectModal({
   const [email, setEmail] = useState<string | undefined>(userEmail);
   const [mongoUrl, setMongoUrl] = useState("");
   const [authJsSecret, setAuthJsSecret] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (userEmail && !email) {
-      setEmail(userEmail);
-    }
+    if (userEmail && !email) setEmail(userEmail);
   }, [userEmail, email]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1 && projectName) {
       setStep(2);
     } else if (step === 2) {
@@ -51,18 +50,28 @@ export default function NewProjectModal({
         return;
       }
 
-      onFinish({
-        projectName,
-        email,
-        mongoUrl: mongoUrl || undefined,
-        authJsSecret: authJsSecret || undefined,
-      });
+      setIsLoading(true); // start loading
+      try {
+        await onFinish({
+          projectName,
+          email,
+          mongoUrl: mongoUrl || undefined,
+          authJsSecret: authJsSecret || undefined,
+        });
 
-      onClose();
-      setStep(1);
-      setProjectName("");
-      setMongoUrl("");
-      setAuthJsSecret("");
+        onClose();
+        setStep(1);
+        setProjectName("");
+        setMongoUrl("");
+        setAuthJsSecret("");
+      } catch (err) {
+        console.error("Error creating project:", err);
+        toast.error(
+          err instanceof Error ? err.message : "Failed to create project"
+        );
+      } finally {
+        setIsLoading(false); // stop loading
+      }
     }
   };
 
@@ -88,6 +97,7 @@ export default function NewProjectModal({
                   placeholder="Enter project name"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
 
@@ -99,6 +109,7 @@ export default function NewProjectModal({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="user@example.com"
+                  disabled={isLoading}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   This is the email associated with your MongoDB account. You
@@ -118,6 +129,7 @@ export default function NewProjectModal({
                   placeholder="mongodb+srv://..."
                   value={mongoUrl}
                   onChange={(e) => setMongoUrl(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
 
@@ -129,6 +141,7 @@ export default function NewProjectModal({
                   placeholder="Your Auth JS secret"
                   value={authJsSecret}
                   onChange={(e) => setAuthJsSecret(e.target.value)}
+                  disabled={isLoading}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   You can leave this blank if not needed.
@@ -139,16 +152,29 @@ export default function NewProjectModal({
         </div>
 
         <DialogFooter className="mt-6 flex justify-end">
-          <Button variant="outline" onClick={onClose} className="mr-2">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="mr-2"
+            disabled={isLoading}
+          >
             Cancel
           </Button>
           {step === 2 && (
-            <Button variant="outline" onClick={handleBack} className="mr-2">
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              className="mr-2"
+              disabled={isLoading}
+            >
               Back
             </Button>
           )}
-          <Button onClick={handleNext} disabled={step === 1 && !projectName}>
-            {step === 1 ? "Next" : "Finish"}
+          <Button
+            onClick={handleNext}
+            disabled={(step === 1 && !projectName) || isLoading}
+          >
+            {isLoading ? "Creating..." : step === 1 ? "Next" : "Finish"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Database, MoreVertical } from "lucide-react";
+import { Database, MoreVertical, Loader2 } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -35,9 +35,14 @@ export type Project = {
 interface ProjectCardProps {
   project: Project;
   onDelete: (id: string) => Promise<void>;
+  isDeleting?: boolean;
 }
 
-export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
+export default function ProjectCard({
+  project,
+  onDelete,
+  isDeleting = false,
+}: ProjectCardProps) {
   const formatDate = (isoStr?: string) => {
     if (!isoStr) return "";
     const date = new Date(isoStr);
@@ -75,9 +80,11 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
               <DropdownMenuItem>Edit</DropdownMenuItem>
               <DropdownMenuItem>Export</DropdownMenuItem>
               <DropdownMenuItem
-                className="text-destructive"
+                className="text-destructive flex items-center gap-2"
                 onClick={() => onDelete(project._id)}
+                disabled={isDeleting}
               >
+                {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
