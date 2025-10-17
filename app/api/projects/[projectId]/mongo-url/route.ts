@@ -6,7 +6,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { projectId: string } }
 ) {
-  const { projectId } = await params;
+  const { projectId } = params;
   const { mongoUrl } = await req.json();
 
   if (!mongoUrl || typeof mongoUrl !== "string") {

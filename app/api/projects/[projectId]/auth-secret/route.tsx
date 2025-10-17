@@ -6,7 +6,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { projectId: string } }
 ) {
-  const { projectId } = await params;
+  const { projectId } = params;
   const { authSecret } = await req.json();
 
   if (!authSecret || typeof authSecret !== "string") {
