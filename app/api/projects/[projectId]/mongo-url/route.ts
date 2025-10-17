@@ -4,9 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { projectId: string } }
+  context: { params: Promise<{ projectId: string }> }
 ) {
-  const { projectId } = params;
+  const { projectId } = await context.params;
   const { mongoUrl } = await req.json();
 
   if (!mongoUrl || typeof mongoUrl !== "string") {
@@ -22,8 +22,9 @@ export async function PATCH(
       { new: true }
     ).lean();
 
-    if (!updated)
+    if (!updated) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
 
     return NextResponse.json({ success: true, mongoUrl: updated.mongoUrl });
   } catch (err) {
