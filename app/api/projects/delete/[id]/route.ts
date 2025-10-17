@@ -1,12 +1,11 @@
-// app/api/projects/delete/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { deleteProject, deleteProjectDocuments } from "@/lib/db";
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const projectId = params.id;
+  const { id: projectId } = await context.params;
 
   if (!projectId) {
     return NextResponse.json({ error: "Missing projectId" }, { status: 400 });
