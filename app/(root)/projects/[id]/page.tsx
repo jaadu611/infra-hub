@@ -124,7 +124,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         <SecurityAndAuth
           apiKey={project.apiKey}
           authSecret={project.authSecret}
-          projectId={project._id.toString()}
         />
         <TeamManagement
           members={project.members ?? []}
@@ -132,7 +131,19 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           projectId={id}
           currentUserEmail={session?.user?.id}
         />
-        <ProjectDocument documents={project.documents!} />
+        <ProjectDocument
+          documents={project.documents!.map((doc) => ({
+            ...doc,
+            name: doc.name ?? "Untitled",
+            createdAt: doc.createdAt ?? new Date().toISOString(),
+            addedBy:
+              typeof doc.addedBy === "object"
+                ? doc.addedBy
+                : doc.addedBy
+                ? { name: doc.addedBy, email: "" }
+                : undefined,
+          }))}
+        />
       </main>
     </div>
   );

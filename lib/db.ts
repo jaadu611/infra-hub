@@ -9,8 +9,20 @@ import DocumentModel from "@/models/Docs";
 export interface Member {
   _id: string;
   name?: string;
+  user?: { _id: string; name?: string };
   email?: string;
   role?: "admin" | "editor" | "viewer";
+}
+
+export interface Document {
+  _id: string;
+  name?: string;
+  title?: string;
+  content?: string;
+  addedBy?: string;
+  createdAt?: string;
+  owner?: { _id: string; name?: string } | string;
+  projectId?: string;
 }
 
 export interface ProjectDoc {
@@ -19,17 +31,6 @@ export interface ProjectDoc {
   members?: Member[];
   documents?: Document[];
   createdAt: string;
-}
-
-export interface Document {
-  _id: string;
-  name: string;
-  title?: string;
-  addedBy?: string;
-  createdAt?: string;
-  content?: string;
-  ownerId?: string;
-  projectId?: string;
 }
 
 export interface APIRequest {
@@ -51,7 +52,9 @@ export interface UserType {
   role: "admin" | "editor" | "viewer";
   status: "active" | "inactive" | "pending";
   lastLogin?: Date;
-  projects?: ProjectDoc[];
+  projects?: ProjectType[];
+  recentActivity?: Activity[];
+  apiRequests?: APIRequest[];
 }
 
 export interface DashboardData {
@@ -83,60 +86,79 @@ export interface ProjectType {
   updatedAt: string;
 }
 
+// ------------------ Populated Types ------------------
+
+interface PopulatedUser {
+  _id: string;
+  name: string;
+  email: string;
+  role?: "admin" | "editor" | "viewer";
+}
+
+interface PopulatedMember {
+  _id: string;
+  name?: string;
+  email?: string;
+  role: "admin" | "editor" | "viewer";
+  user?: PopulatedUser;
+}
+
 // ------------------ Functions ------------------
 
-// Fetch dashboard data for a user
-export async function getUserDashboardData(email: string) {
+export async function getUserDashboardData(
+  email: string
+): Promise<DashboardData | null> {
   await connectDB();
 
-  const user = await User.findOne({ email })
+  const userDoc = await User.findOne({ email })
     .populate({
       path: "projects",
       populate: [
         { path: "members", select: "name email role" },
-        { path: "documents", select: "name" },
+        { path: "documents", select: "name content owner createdAt" },
       ],
     })
-    .lean();
+    .lean<UserType>();
 
-  if (!user) return null;
+  if (!userDoc) return null;
 
-  const projects: ProjectDoc[] = (user.projects ?? []).map((p) => ({
+  const projects: ProjectDoc[] = (userDoc.projects ?? []).map((p) => ({
     _id: p._id.toString(),
     name: p.name,
-    createdAt: p.createdAt?.toISOString() || new Date().toISOString(),
-    members: (p.members ?? []).map((m) => ({
+    createdAt: p.createdAt?.toString() ?? new Date().toISOString(),
+    members: p.members?.map((m) => ({
       _id: m._id.toString(),
       name: m.name,
       email: m.email,
       role: m.role,
+      user: m.user ? { _id: m.user._id, name: m.user.name } : undefined,
     })),
-    documents: (p.documents ?? []).map((d) => ({
+    documents: p.documents?.map((d) => ({
       _id: d._id.toString(),
-      title: d.name,
-      content: d.content,
-      addedBy: d.owner?.toString(),
-      createdAt: d.createdAt?.toISOString(),
+      title: d.name ?? "Untitled",
+      content: d.content ?? "",
+      addedBy: typeof d.owner === "string" ? d.owner : d.owner?._id,
+      createdAt: d.createdAt?.toString(),
       projectId: p._id.toString(),
     })),
   }));
 
   const documents: Document[] = projects.flatMap((p) => p.documents ?? []);
 
-  const recentActivity: Activity[] = (user.recentActivity ?? [])
+  const recentActivity: Activity[] = (userDoc.recentActivity ?? [])
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
     .slice(0, 5);
 
   return {
-    user: { _id: user._id.toString(), name: user.name },
+    user: { _id: userDoc._id.toString(), name: userDoc.name },
     projects,
     documents,
-    apiRequests: user.apiRequests ?? [],
+    apiRequests: userDoc.apiRequests ?? [],
     recentActivity,
   };
 }
 
-// Delete project and remove references from users
+// Delete project
 export async function deleteProject(projectId: string) {
   await connectDB();
 
@@ -151,7 +173,7 @@ export async function deleteProject(projectId: string) {
   return { success: true };
 }
 
-// Delete all documents of a project
+// Delete project documents
 export async function deleteProjectDocuments(projectId: string) {
   await connectDB();
 
@@ -179,14 +201,13 @@ export async function createProjectServer(data: CreateProjectData) {
     name: projectName,
     members: [{ user: user._id, role: "admin" }],
     invitedEmails: [],
-    mongoUrl: mongoUrl || "no-url",
-    authSecret: authJsSecret || crypto.randomBytes(16).toString("hex"),
+    mongoUrl: mongoUrl ?? "no-url",
+    authSecret: authJsSecret ?? crypto.randomBytes(16).toString("hex"),
     apiKey: crypto.randomBytes(16).toString("hex"),
     documents: [],
     activities: [],
   });
 
-  // Initial README document
   const now = new Date();
   const formattedDate = now.toLocaleString("en-US", {
     weekday: "long",
@@ -245,7 +266,7 @@ export async function getProjectById(id: string) {
   return project ?? null;
 }
 
-// Invite a user to a project
+// Invite user to project
 export async function inviteUserToProject(projectId: string, userId: string) {
   await connectDB();
 
@@ -255,7 +276,7 @@ export async function inviteUserToProject(projectId: string, userId: string) {
   const user = await User.findById(userId);
   if (!user) throw new Error("User not found");
 
-  if (!project.invitedEmails) project.invitedEmails = [];
+  project.invitedEmails = project.invitedEmails ?? [];
   if (!project.invitedEmails.includes(user.email)) {
     project.invitedEmails.push(user.email);
     await project.save();
@@ -271,20 +292,24 @@ export async function getProjectsServer(userEmail?: string) {
   let query = {};
   if (userEmail) query = { "members.user": await getUserIdByEmail(userEmail) };
 
+  // Explicitly type as array
   const projects = await Project.find(query)
     .populate({ path: "members.user", select: "name email role" })
-    .lean();
+    .lean<(ProjectType & { members?: PopulatedMember[] })[]>();
 
   return projects.map((p) => ({
     _id: p._id.toString(),
     name: p.name,
-    createdAt: p.createdAt?.toISOString() || new Date().toISOString(),
-    members: (p.members ?? []).map((m) => ({
-      _id: m.user._id.toString(),
-      name: m.user.name,
-      email: m.user.email,
-      role: m.role ?? "viewer",
-    })),
+    createdAt: p.createdAt?.toString() ?? new Date().toISOString(),
+    members: p.members?.map((m) => {
+      const user = m.user;
+      return {
+        _id: user?._id.toString() ?? "",
+        name: user?.name ?? "Unknown",
+        email: user && "email" in user ? user.email : "",
+        role: m.role ?? "viewer",
+      };
+    }),
     documentsCount: Array.isArray(p.documents) ? p.documents.length : 0,
     apiKey: p.apiKey,
     mongoUrl: p.mongoUrl,

@@ -34,12 +34,12 @@ interface Projects {
   members?: Member[];
 }
 
-interface Document {
+type Document = {
   _id: string;
-  title?: string;
+  title: string;
   content: string;
   projectId: string;
-}
+};
 
 interface APIRequest {
   _id: string;
@@ -69,13 +69,41 @@ export default async function DashboardPage() {
     return <p className="text-center mt-20 text-red-500">Please log in.</p>;
   }
 
-  const data: DashboardData | null = await getUserDashboardData(
-    session.user.email
-  );
+  const rawData = await getUserDashboardData(session.user.email);
 
-  if (!data) {
+  if (!rawData) {
     return <p className="text-center mt-20 text-red-500">User not found.</p>;
   }
+
+  // ------------------ Sanitize Data ------------------
+  const data: DashboardData = {
+    user: {
+      _id: rawData.user._id ?? "unknown",
+      name: rawData.user.name ?? "User",
+    },
+    projects: (rawData.projects ?? []).map((proj) => ({
+      _id: proj._id ?? "unknown",
+      name: proj.name ?? "Untitled Project",
+      members: (proj.members ?? []).map((m) => ({
+        _id: m._id ?? m.user?._id ?? "unknown",
+        name: m.name ?? m.user?.name ?? "Unknown",
+        user: m.user
+          ? {
+              _id: m.user._id ?? "unknown",
+              name: m.user.name ?? "Unknown",
+            }
+          : undefined,
+      })),
+    })),
+    documents: (rawData.documents ?? []).map((doc) => ({
+      _id: doc._id ?? "unknown",
+      title: doc.title ?? "Untitled",
+      content: doc.content ?? "",
+      projectId: doc.projectId ?? "unknown",
+    })),
+    apiRequests: rawData.apiRequests ?? [],
+    recentActivity: rawData.recentActivity ?? [],
+  };
 
   const { user, projects, documents, apiRequests, recentActivity } = data;
 
@@ -101,15 +129,9 @@ export default async function DashboardPage() {
       title: "Active Users",
       value: (() => {
         const allMembers = projects.flatMap((p) => p.members ?? []);
-        const allUserIds = allMembers
-          .map((m) =>
-            typeof m.user === "object" ? m.user._id?.toString() : m.user
-          )
-          .filter(Boolean);
+        const allUserIds = allMembers.map((m) => m._id).filter(Boolean);
         const uniqueUserIds = Array.from(new Set(allUserIds));
-        const activeUserIds = uniqueUserIds.filter(
-          (id) => id !== user._id.toString()
-        );
+        const activeUserIds = uniqueUserIds.filter((id) => id !== user._id);
         return activeUserIds.length.toString();
       })(),
       icon: Users,

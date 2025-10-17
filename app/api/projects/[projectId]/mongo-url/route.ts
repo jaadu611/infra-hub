@@ -1,6 +1,7 @@
 import { connectDB } from "@/lib/mongodb";
 import Project from "@/models/Project";
 import { NextRequest, NextResponse } from "next/server";
+import { ProjectType } from "@/lib/db";
 
 export async function PATCH(
   req: NextRequest,
@@ -20,7 +21,7 @@ export async function PATCH(
       projectId,
       { mongoUrl },
       { new: true }
-    ).lean();
+    ).lean<ProjectType>(); // <-- explicitly type lean to ProjectType
 
     if (!updated) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
