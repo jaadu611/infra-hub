@@ -36,7 +36,9 @@ interface Projects {
 
 interface Document {
   _id: string;
-  title: string;
+  title?: string;
+  content: string;
+  projectId: string;
 }
 
 interface APIRequest {
