@@ -5,10 +5,10 @@ import { sendInviteEmail } from "@/lib/mailer";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { projectId: string } }
+  context: { params: Promise<{ projectId: string }> } // ✅ Next.js 15 App Router expects a Promise
 ) {
   try {
-    const { projectId } = params;
+    const { projectId } = await context.params; // ✅ await the promise
     const { userId } = await req.json();
 
     if (!userId)
