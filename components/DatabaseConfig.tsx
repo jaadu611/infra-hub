@@ -79,7 +79,7 @@ const DatabaseConfig: React.FC<DatabaseConfigProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="hover:bg-indigo-400/40"
+                className="hover:bg-indigo-400/40!"
                 onClick={handleCopy}
               >
                 {copied ? (
