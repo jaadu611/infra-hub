@@ -21,6 +21,10 @@ export default async function RootLayout({
         id: session.user.id!,
         name: session.user.name ?? "",
         email: session.user.email ?? "",
+        recentActivity: [],
+        documents: [],
+        projects: [],
+        apiRequests: [],
       }
     : null;
 
