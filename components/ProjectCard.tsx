@@ -34,7 +34,7 @@ export type Project = {
 
 interface ProjectCardProps {
   project: Project;
-  onDelete: (id: string) => Promise<void>;
+  onDelete: (id: string) => void;
   isDeleting?: boolean;
 }
 

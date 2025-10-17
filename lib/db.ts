@@ -85,9 +85,8 @@ export interface ProjectType {
 
 // ------------------ Functions ------------------
 
-export async function getUserDashboardData(
-  email: string
-): Promise<DashboardData | null> {
+// Fetch dashboard data for a user
+export async function getUserDashboardData(email: string) {
   await connectDB();
 
   const user = await User.findOne({ email })
@@ -137,6 +136,7 @@ export async function getUserDashboardData(
   };
 }
 
+// Delete project and remove references from users
 export async function deleteProject(projectId: string) {
   await connectDB();
 
@@ -151,13 +151,12 @@ export async function deleteProject(projectId: string) {
   return { success: true };
 }
 
+// Delete all documents of a project
 export async function deleteProjectDocuments(projectId: string) {
   await connectDB();
 
   const project = await Project.findById(projectId).select("documents");
-  if (!project) {
-    throw new Error("Project not found");
-  }
+  if (!project) throw new Error("Project not found");
 
   const result = await DocumentModel.deleteMany({
     _id: { $in: project.documents },
@@ -166,9 +165,8 @@ export async function deleteProjectDocuments(projectId: string) {
   return { success: true, deletedCount: result.deletedCount };
 }
 
-export async function createProjectServer(
-  data: CreateProjectData
-): Promise<ProjectType> {
+// Create a new project
+export async function createProjectServer(data: CreateProjectData) {
   await connectDB();
 
   const { projectName, email, mongoUrl, authJsSecret } = data;
@@ -188,7 +186,7 @@ export async function createProjectServer(
     activities: [],
   });
 
-  // Initial document
+  // Initial README document
   const now = new Date();
   const formattedDate = now.toLocaleString("en-US", {
     weekday: "long",
@@ -232,6 +230,7 @@ export async function createProjectServer(
   };
 }
 
+// Get project by ID
 export async function getProjectById(id: string) {
   await connectDB();
 
@@ -246,6 +245,7 @@ export async function getProjectById(id: string) {
   return project ?? null;
 }
 
+// Invite a user to a project
 export async function inviteUserToProject(projectId: string, userId: string) {
   await connectDB();
 
@@ -264,6 +264,7 @@ export async function inviteUserToProject(projectId: string, userId: string) {
   return project;
 }
 
+// Get all projects for a user
 export async function getProjectsServer(userEmail?: string) {
   await connectDB();
 
@@ -291,6 +292,7 @@ export async function getProjectsServer(userEmail?: string) {
   }));
 }
 
+// Helper to get user ID by email
 async function getUserIdByEmail(email: string) {
   const user = await User.findOne({ email });
   if (!user) throw new Error("User not found");

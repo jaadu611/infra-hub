@@ -6,27 +6,20 @@ if (!MONGODB_URI) {
   throw new Error("Please define the MONGODB_URI environment variable");
 }
 
-interface MongooseCache {
-  conn: Mongoose | null;
-  promise: Promise<Mongoose> | null;
-}
-
 declare global {
-  var mongoose: MongooseCache;
+  var mongoose: { conn: Mongoose | null };
 }
 
-const cached: MongooseCache = global.mongoose || { conn: null, promise: null };
+const cached = global.mongoose || { conn: null };
 
-export async function connectDB(): Promise<Mongoose> {
+export async function connectDB() {
   if (cached.conn) return cached.conn;
 
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI as string, {
-      dbName: "infra-hub",
-    }) as Promise<Mongoose>;
-  }
+  const conn = await mongoose.connect(MONGODB_URI as string, {
+    dbName: "infra-hub",
+  });
 
-  cached.conn = await cached.promise;
+  cached.conn = conn;
   global.mongoose = cached;
-  return cached.conn;
+  return conn;
 }

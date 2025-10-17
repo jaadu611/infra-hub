@@ -21,7 +21,7 @@ interface NewProjectModalProps {
     email: string;
     mongoUrl?: string;
     authJsSecret?: string;
-  }) => Promise<void> | void;
+  }) => void;
 }
 
 export default function NewProjectModal({
@@ -41,18 +41,22 @@ export default function NewProjectModal({
     if (userEmail && !email) setEmail(userEmail);
   }, [userEmail, email]);
 
-  const handleNext = async () => {
+  const handleNext = () => {
     if (step === 1 && projectName) {
       setStep(2);
-    } else if (step === 2) {
+      return;
+    }
+
+    if (step === 2) {
       if (!email) {
         toast.error("Please enter your email");
         return;
       }
 
-      setIsLoading(true); // start loading
+      setIsLoading(true);
+
       try {
-        await onFinish({
+        onFinish({
           projectName,
           email,
           mongoUrl: mongoUrl || undefined,
@@ -70,7 +74,7 @@ export default function NewProjectModal({
           err instanceof Error ? err.message : "Failed to create project"
         );
       } finally {
-        setIsLoading(false); // stop loading
+        setIsLoading(false);
       }
     }
   };
@@ -80,7 +84,12 @@ export default function NewProjectModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={() => {
+        if (!isLoading) onClose();
+      }}
+    >
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
@@ -160,6 +169,7 @@ export default function NewProjectModal({
           >
             Cancel
           </Button>
+
           {step === 2 && (
             <Button
               variant="outline"
@@ -170,6 +180,7 @@ export default function NewProjectModal({
               Back
             </Button>
           )}
+
           <Button
             onClick={handleNext}
             disabled={(step === 1 && !projectName) || isLoading}
