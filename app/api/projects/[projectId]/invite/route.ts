@@ -5,10 +5,10 @@ import { sendInviteEmail } from "@/lib/mailer";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ projectId: string }> }
+  { params }: { params: { projectId: string } }
 ) {
   try {
-    const { projectId } = await params;
+    const { projectId } = params;
     const { userId } = await req.json();
 
     if (!userId)
@@ -32,7 +32,6 @@ export async function POST(
     const updatedProject = await inviteUserToProject(projectId, userId);
     const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/projects/${projectId}/join`;
 
-    // ✅ properly formatted email call
     await sendInviteEmail({
       to: user.email,
       subject: `You're invited to join "${project.name}" on InfraHub!`,
