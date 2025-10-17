@@ -1,0 +1,139 @@
+import React from "react";
+import { getProjectById, ProjectType } from "@/lib/db";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Database,
+  Calendar,
+  Users,
+  FileText,
+  Activity,
+  Settings,
+  Mail,
+} from "lucide-react";
+import DatabaseConfig from "@/components/DatabaseConfig";
+import SecurityAndAuth from "@/components/Security";
+import TeamManagement from "@/components/TeamManagement";
+import ProjectDocument from "@/components/ProjectDocument";
+import { auth } from "@/auth";
+
+interface ProjectPageProps {
+  params: { id: string };
+}
+
+export default async function ProjectPage({ params }: ProjectPageProps) {
+  const id = params.id;
+  const project: ProjectType | null = await getProjectById(id);
+  const session = await auth();
+
+  if (!project) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="text-center space-y-4">
+          <div className="p-6 rounded-full bg-red-800 mx-auto w-fit">
+            <Database className="h-12 w-12 text-red-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-white">Project Not Found</h2>
+          <p className="text-gray-400">
+            The project you’re looking for doesn’t exist or has been removed.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
+      <header className="relative p-6 bg-gray-900/70 backdrop-blur-md shadow-md border-b border-gray-700">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="flex items-start md:items-center gap-4">
+            <div className="p-3 rounded-xl bg-blue-600 text-white shadow-sm">
+              <Database className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">{project.name}</h1>
+              <p className="text-gray-400 flex items-center gap-2 mt-1 text-sm">
+                <Calendar className="h-4 w-4" />
+                Created {formatDate(project.createdAt)}
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm">
+            <Settings className="h-4 w-4 mr-2" /> Settings
+          </Button>
+        </div>
+      </header>
+
+      <section className="max-w-7xl mx-auto p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          {
+            label: "Documents",
+            value: project.documents?.length ?? 0,
+            icon: FileText,
+            color: "blue",
+          },
+          {
+            label: "Team Members",
+            value: project.members?.length ?? 0,
+            icon: Users,
+            color: "green",
+          },
+          {
+            label: "Activities",
+            value: project.activities?.length ?? 0,
+            icon: Activity,
+            color: "purple",
+          },
+          {
+            label: "Invites Sent",
+            value: project.invitedEmails?.length ?? 0,
+            icon: Mail,
+            color: "orange",
+          },
+        ].map((stat, i) => (
+          <Card
+            key={i}
+            className="bg-gray-800 border-0 shadow-md backdrop-blur-sm"
+          >
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">{stat.label}</p>
+                <p className="text-3xl font-bold">{stat.value}</p>
+              </div>
+              <div
+                className={`p-3 rounded-full bg-${stat.color}-100 dark:bg-${stat.color}-900/20`}
+              >
+                <stat.icon className={`h-5 w-5 text-${stat.color}-600`} />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-6 pb-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <DatabaseConfig mongoUrl={project.mongoUrl} projectId={id} />
+        <SecurityAndAuth
+          apiKey={project.apiKey}
+          authSecret={project.authSecret}
+          projectId={project._id.toString()}
+        />
+        <TeamManagement
+          members={project.members ?? []}
+          invitedEmails={project.invitedEmails ?? []}
+          projectId={id}
+          currentUserEmail={session?.user?.id}
+        />
+        <ProjectDocument documents={project.documents!} />
+      </main>
+    </div>
+  );
+}
