@@ -4,9 +4,9 @@ import { connectDB } from "@/lib/mongodb";
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: { projectId: string } }
+  context: { params: Promise<{ projectId: string }> } // Next.js expects a Promise here
 ) {
-  const { projectId } = context.params;
+  const { projectId } = await context.params; // await the params
   const { authSecret } = await req.json();
 
   if (!authSecret || typeof authSecret !== "string") {
