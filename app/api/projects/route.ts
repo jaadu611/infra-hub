@@ -4,11 +4,15 @@ import { createProjectServer, getProjectsServer } from "@/lib/db";
 export async function GET() {
   try {
     const projects = await getProjectsServer();
-    return NextResponse.json(projects ?? []);
+
+    const safeProjects = Array.isArray(projects) ? projects : [];
+
+    return NextResponse.json(safeProjects);
   } catch (err) {
-    console.error("Error fetching projects:", err);
     return NextResponse.json(
-      { error: "Failed to fetch projects" },
+      {
+        error: err instanceof Error ? err.message : "Failed to fetch projects",
+      },
       { status: 500 }
     );
   }

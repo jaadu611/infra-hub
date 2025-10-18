@@ -33,7 +33,11 @@ export default function ProjectsPage() {
   // Fetch projects
   useEffect(() => {
     const fetchProjects = async () => {
-      if (!userEmail) return;
+      if (!userEmail) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
         const res = await fetch("/api/projects", {
@@ -41,11 +45,11 @@ export default function ProjectsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: userEmail }),
         });
-        if (!res.ok) throw new Error("Failed to fetch projects");
         const data: Project[] = await res.json();
-        setProjects(data);
+        setProjects(data || []); // make sure it’s always an array
       } catch (err) {
         console.error("Error fetching projects:", err);
+        setProjects([]); // fallback to empty array
       } finally {
         setIsLoading(false);
       }
