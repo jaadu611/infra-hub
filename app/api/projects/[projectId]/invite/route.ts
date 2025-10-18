@@ -27,11 +27,9 @@ export async function POST(
     if (!user)
       return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-    // --- Create the invite ---
     const { token } = await inviteUserToProject(projectId, userId, role);
     const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/projects/${projectId}/join?token=${token}`;
 
-    // --- Send invite email ---
     await sendInviteEmail({
       to: user.email,
       subject: `You're invited to join "${project.name}" on InfraHub!`,
