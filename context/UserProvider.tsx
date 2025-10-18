@@ -7,7 +7,7 @@ export interface Activity {
   action: string;
   collection: string;
   time: string; // ISO string or formatted
-  type: "create" | "update" | "delete" | "success";
+  type: "delete" | "join" | "invite" | "create" | "update";
 }
 
 // Document type

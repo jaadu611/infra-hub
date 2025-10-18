@@ -1,11 +1,11 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Bell, User, Key, Folder, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { AppSheetMenu } from "./AppSidebar";
 import { useUser } from "@/context/UserProvider";
 
@@ -27,43 +27,43 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const isActive = (url: string) => pathname === url;
 
   return (
-    <div className="flex min-h-screen w-full bg-gradient-to-b from-background/90 to-background/100 text-foreground">
-      {/* Sidebar (visible on md+) */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-card/80 backdrop-blur-md p-4 h-screen sticky top-0 overflow-hidden">
+    <div className="flex min-h-screen w-full bg-background text-foreground">
+      {/* Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 border-r border-gray-200 dark:border-gray-800 bg-card/90 backdrop-blur-md p-4 h-screen sticky top-0">
         {/* Logo */}
-        <div className="flex items-center gap-2 mb-6 shrink-0">
+        <div className="flex items-center gap-2 mb-8">
           <div
-            className="h-8 w-8 rounded-lg"
+            className="h-10 w-10 rounded-lg"
             style={{ background: "var(--gradient-primary)" }}
           />
-          <span className="font-semibold text-lg">BaaS Platform</span>
+          <span className="font-bold text-lg text-foreground">
+            BaaS Platform
+          </span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-8 overflow-y-auto pr-2">
-          {/* Main Items */}
-          <div className="flex flex-col gap-1">
-            {mainItems.map((item) => (
-              <Link
-                key={item.title}
-                href={item.url}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
-                  isActive(item.url)
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "hover:bg-sidebar-accent/50"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.title}
-              </Link>
-            ))}
-          </div>
+        <nav className="flex-1 space-y-4 overflow-y-auto">
+          {mainItems.map((item) => (
+            <Link
+              key={item.title}
+              href={item.url}
+              className={`flex items-center gap-3 p-4 rounded-lg transition-colors duration-200 font-medium text-sm ${
+                isActive(item.url)
+                  ? "bg-blue-400/20 dark:bg-blue-400/30 text-blue-600 dark:text-blue-400"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              }`}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.title}
+            </Link>
+          ))}
         </nav>
       </aside>
 
-      {/* Main content area */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="border-b border-sidebar-border bg-card/90 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between px-4 md:px-6 lg:px-8 h-16 shadow-sm text-foreground shrink-0">
+        <header className="border-b border-gray-200 dark:border-gray-800 bg-card/90 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between px-4 md:px-6 h-16 shadow-sm">
+          {/* Mobile Menu */}
           <div className="lg:hidden">
             <AppSheetMenu />
           </div>
@@ -75,7 +75,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative text-foreground hover:bg-blue-400!"
+                className="relative text-foreground hover:bg-blue-400/40!"
               >
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-gradient-primary animate-pulse" />
@@ -87,25 +87,21 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {user ? (
               <Button
                 variant="ghost"
-                className="gap-2 hover:bg-muted text-foreground"
+                className="gap-2 py-6 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
               >
-                <Avatar
-                  className="h-7 w-7"
-                  style={{ background: "var(--gradient-primary)" }}
-                >
-                  <AvatarFallback className="bg-gradient-primary text-white text-xs">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="text-white text-xs">
                     <User className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden md:inline text-sm font-medium">
+                <span className="hidden md:inline text-sm font-medium text-foreground">
                   {user.name}
                 </span>
               </Button>
             ) : (
               <Button
                 variant="ghost"
-                className="gap-2 py-2 px-4 text-white hover:opacity-90 transition-opacity"
-                style={{ background: "var(--gradient-primary)" }}
+                className="gap-2 py-2 px-4 bg-gradient-primary text-white hover:opacity-90 transition-opacity rounded-md"
               >
                 Get Started
               </Button>
@@ -113,7 +109,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto text-foreground">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background/90">
           {children}
         </main>
       </div>

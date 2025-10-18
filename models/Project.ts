@@ -38,7 +38,6 @@ const projectSchema = new Schema(
     authSecret: { type: String, required: true },
 
     documents: [{ type: Schema.Types.ObjectId, ref: "Document" }],
-    activities: [{ type: Schema.Types.ObjectId, ref: "Activity" }],
   },
   { timestamps: true }
 );

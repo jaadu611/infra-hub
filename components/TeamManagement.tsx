@@ -50,45 +50,39 @@ export default function TeamManagement({
         <div>
           <h4 className="font-medium mb-3">Members ({members.length})</h4>
 
-          {members.length ? (
-            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-              {sortedMembers.map((member, index) => {
-                const name = member.user?.name ?? "No Name";
-                const email = member.user?.email ?? "No Email";
-                const role = member.role ?? "viewer";
+          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+            {sortedMembers.map((member, index) => {
+              const name = member.user?.name ?? "No Name";
+              const email = member.user?.email ?? "No Email";
+              const role = member.role ?? "viewer";
 
-                return (
-                  <div
-                    key={index}
-                    className="flex items-center gap-4 dark:border-gray-700 border-gray-300 border p-3 dark:bg-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg dark:hover:bg-gray-600 transition"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
-                      {name[0].toUpperCase()}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-medium dark:text-white">
-                        {name}
-                      </span>
-                      <span className="text-gray-400 text-sm">{email}</span>
-                    </div>
-                    <span
-                      className={`ml-auto px-2 py-1 text-xs font-semibold rounded-full uppercase ${
-                        role === "admin"
-                          ? "bg-purple-400 text-white"
-                          : role === "editor"
-                          ? "bg-emerald-400/40 text-white"
-                          : "bg-gray-600 text-gray-200"
-                      }`}
-                    >
-                      {role}
-                    </span>
+              return (
+                <div
+                  key={index}
+                  className="flex items-center gap-4 dark:border-gray-700 border-gray-300 border p-3 dark:bg-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg dark:hover:bg-gray-600 transition"
+                >
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
+                    {name[0].toUpperCase()}
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-gray-400 text-sm italic">No active members</p>
-          )}
+                  <div className="flex flex-col">
+                    <span className="font-medium dark:text-white">{name}</span>
+                    <span className="text-gray-400 text-sm">{email}</span>
+                  </div>
+                  <span
+                    className={`ml-auto px-2 py-1 text-xs font-semibold rounded-full uppercase ${
+                      role === "admin"
+                        ? "bg-purple-400 text-white"
+                        : role === "editor"
+                        ? "bg-emerald-400/40 text-white"
+                        : "bg-gray-600 text-gray-200"
+                    }`}
+                  >
+                    {role}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
 
           {invitedEmails.length > 0 && (
             <>

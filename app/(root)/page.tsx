@@ -11,12 +11,17 @@ import {
   Database,
   FileText,
   Users,
-  Activity,
+  Activity as ActivityIcon,
   TrendingUp,
   ArrowUpRight,
   Clock,
   Folder,
   LucideFolder,
+  Plus,
+  Edit,
+  Trash2,
+  Users as UsersIcon,
+  Mail,
 } from "lucide-react";
 import { getUserDashboardData } from "@/lib/db";
 import Link from "next/link";
@@ -46,11 +51,20 @@ interface APIRequest {
   endpoint: string;
 }
 
-interface Activity {
-  type: "success" | "create" | "update" | "delete";
+export type ActivityType = "delete" | "join" | "invite" | "create" | "update";
+
+export interface Activity {
+  type: ActivityType;
   action: string;
   collection: string;
   time: string;
+}
+
+interface RawActivity {
+  type?: ActivityType;
+  action?: string;
+  collection?: string;
+  time?: string | Date;
 }
 
 interface DashboardData {
@@ -75,26 +89,41 @@ export default async function DashboardPage() {
     return <p className="text-center mt-20 text-red-500">User not found.</p>;
   }
 
-  // ------------------ Sanitize Data ------------------
   const data: DashboardData = {
     user: {
       _id: rawData.user._id ?? "unknown",
       name: rawData.user.name ?? "User",
     },
-    projects: (rawData.projects ?? []).map((proj) => ({
-      _id: proj._id ?? "unknown",
-      name: proj.name ?? "Untitled Project",
-      members: (proj.members ?? []).map((m) => ({
-        _id: m._id ?? m.user?._id ?? "unknown",
-        name: m.name ?? m.user?.name ?? "Unknown",
-        user: m.user
-          ? {
-              _id: m.user._id ?? "unknown",
-              name: m.user.name ?? "Unknown",
-            }
-          : undefined,
+    recentActivity: (rawData.recentActivity ?? [])
+      .sort((a, b) => +new Date(b.time ?? 0) - +new Date(a.time ?? 0))
+      .slice(0, 5)
+      .map(
+        (act: RawActivity): Activity => ({
+          type: act.type ?? "create",
+          action: act.action ?? "No action",
+          collection: act.collection ?? "Unknown",
+          time: act.time
+            ? new Date(act.time).toLocaleString()
+            : new Date().toLocaleString(),
+        })
+      ),
+    projects: (rawData.projects ?? [])
+      .sort((a, b) => +new Date(b.createdAt ?? 0) - +new Date(a.createdAt ?? 0))
+      .slice(0, 5)
+      .map((proj) => ({
+        _id: proj._id ?? "unknown",
+        name: proj.name ?? "Untitled Project",
+        members: (proj.members ?? []).map((m) => ({
+          _id: m._id ?? m.user?._id ?? "unknown",
+          name: m.name ?? m.user?.name ?? "Unknown",
+          user: m.user
+            ? {
+                _id: m.user._id ?? "unknown",
+                name: m.user.name ?? "Unknown",
+              }
+            : undefined,
+        })),
       })),
-    })),
     documents: (rawData.documents ?? []).map((doc) => ({
       _id: doc._id ?? "unknown",
       title: doc.title ?? "Untitled",
@@ -102,12 +131,12 @@ export default async function DashboardPage() {
       projectId: doc.projectId ?? "unknown",
     })),
     apiRequests: rawData.apiRequests ?? [],
-    recentActivity: rawData.recentActivity ?? [],
   };
 
   const { user, projects, documents, apiRequests, recentActivity } = data;
 
-  // ------------------ Stats ------------------
+  console.log(user);
+
   const stats = [
     {
       title: "Total Collections",
@@ -126,7 +155,7 @@ export default async function DashboardPage() {
       gradient: "from-blue-500 to-cyan-500",
     },
     {
-      title: "Active Users",
+      title: "Joined Users",
       value: (() => {
         const allMembers = projects.flatMap((p) => p.members ?? []);
         const allUserIds = allMembers.map((m) => m._id).filter(Boolean);
@@ -142,7 +171,7 @@ export default async function DashboardPage() {
     {
       title: "API Requests",
       value: apiRequests.length.toString(),
-      icon: Activity,
+      icon: ActivityIcon,
       change: apiRequests.length
         ? `+${apiRequests.length} from last week`
         : "No data",
@@ -151,9 +180,8 @@ export default async function DashboardPage() {
     },
   ];
 
-  // ------------------ Render ------------------
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-fade-in">
+    <div className="space-y-6 md:space-y-8 animate-fade-in">
       {/* Header */}
       <div
         className="relative overflow-hidden rounded-2xl p-8 md:p-10 text-white shadow-glow"
@@ -213,9 +241,9 @@ export default async function DashboardPage() {
       </div>
 
       {/* Activity + Projects */}
-      <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 min-h-[250px] md:gap-6 lg:grid-cols-2">
         {/* Recent Activity */}
-        <Card className="border-0 shadow-elegant py-6">
+        <Card className="border-0 shadow-elegant py-6 gap-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-xl">Recent Activity</CardTitle>
             <CardDescription>Latest updates from your backend</CardDescription>
@@ -238,26 +266,52 @@ export default async function DashboardPage() {
                 {recentActivity.map((activity, index) => (
                   <div
                     key={index}
-                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-blue-50 transition-colors group"
+                    className="flex items-start gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-400/20 transition-colors group shadow-sm"
                   >
+                    {/* Activity Icon */}
                     <div
-                      className={`w-2 h-2 mt-1 rounded-full ${
-                        activity.type === "success"
-                          ? "bg-green-400"
-                          : activity.type === "create"
-                          ? "bg-blue-400"
-                          : "bg-yellow-400"
+                      className={`flex-shrink-0 m-auto h-10 w-10 rounded-lg flex items-center justify-center text-white shadow-md ${
+                        activity.type === "create"
+                          ? "bg-blue-400 dark:bg-blue-500"
+                          : activity.type === "update"
+                          ? "bg-yellow-400 dark:bg-yellow-500"
+                          : activity.type === "delete"
+                          ? "bg-red-400 dark:bg-red-500"
+                          : activity.type === "join"
+                          ? "bg-purple-400 dark:bg-purple-500"
+                          : "bg-teal-400 dark:bg-teal-500"
                       }`}
-                    />
-                    <div className="flex-1 space-y-1 min-w-0">
-                      <p className="text-sm font-medium leading-none text-foreground">
+                    >
+                      {activity.type === "create" && (
+                        <Plus className="h-5 w-5" />
+                      )}
+                      {activity.type === "update" && (
+                        <Edit className="h-5 w-5" />
+                      )}
+                      {activity.type === "delete" && (
+                        <Trash2 className="h-5 w-5" />
+                      )}
+                      {activity.type === "join" && (
+                        <UsersIcon className="h-5 w-5" />
+                      )}
+                      {activity.type === "invite" && (
+                        <Mail className="h-5 w-5" />
+                      )}
+                    </div>
+
+                    {/* Activity Content */}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <p className="text-sm font-medium text-foreground dark:text-white truncate">
                         {activity.action}
                       </p>
-                      <p className="text-xs text-muted-foreground font-mono truncate">
-                        {activity.collection}
+                      <p className="text-xs font-mono flex flex-col max-w-40 text-muted-foreground dark:text-gray-400 truncate">
+                        <span>by: {user.name}</span>
+                        <span>Project: {activity.collection}</span>
                       </p>
                     </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+
+                    {/* Activity Timestamp */}
+                    <span className="text-xs text-muted-foreground dark:text-gray-400 whitespace-nowrap">
                       {activity.time}
                     </span>
                   </div>
@@ -268,7 +322,7 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Recent Projects */}
-        <Card className="border-0 shadow-elegant py-6">
+        <Card className="border-0 shadow-elegant py-6 gap-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-xl">Recent Projects</CardTitle>
             <CardDescription>
@@ -293,17 +347,17 @@ export default async function DashboardPage() {
                 {projects.slice(0, 5).map((project) => (
                   <div
                     key={project._id}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-800 transition-colors group"
+                    className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-400/20 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-white font-semibold">
-                        <LucideFolder />
+                      <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-white font-semibold shadow-md">
+                        <LucideFolder className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-sm font-medium text-foreground dark:text-white">
                           {project.name}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground dark:text-gray-400">
                           {project.members?.length ?? 0} member
                           {project.members && project.members.length !== 1
                             ? "s"
@@ -315,7 +369,7 @@ export default async function DashboardPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-400/40! duration-200 text-blue-500"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-400/40 duration-200 text-blue-500"
                       >
                         View
                         <ArrowUpRight className="ml-1 h-4 w-4" />

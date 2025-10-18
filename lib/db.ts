@@ -3,6 +3,8 @@ import { connectDB } from "./mongodb";
 import crypto from "crypto";
 import Project from "@/models/Project";
 import DocumentModel from "@/models/Docs";
+import Activity from "@/models/Activity";
+import { Types } from "mongoose";
 
 // ------------------ Types ------------------
 
@@ -39,7 +41,7 @@ export interface APIRequest {
 }
 
 export interface Activity {
-  type: "success" | "create" | "update" | "delete";
+  type: "delete" | "join" | "invite" | "create" | "update";
   action: string;
   collection: string;
   time: string;
@@ -70,6 +72,27 @@ export interface CreateProjectData {
   email: string;
   mongoUrl?: string;
   authJsSecret?: string;
+}
+
+interface PopulatedDocument {
+  _id: Types.ObjectId;
+  name?: string;
+  content?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  owner?:
+    | {
+        _id: Types.ObjectId;
+        name: string;
+        email: string;
+      }
+    | string;
+  project?:
+    | {
+        _id: Types.ObjectId;
+        name: string;
+      }
+    | string;
 }
 
 export interface ProjectType {
@@ -114,7 +137,7 @@ export async function getUserDashboardData(
     .populate({
       path: "projects",
       populate: [
-        { path: "members", select: "name email role" },
+        { path: "members", select: "name email role user" },
         { path: "documents", select: "name content owner createdAt" },
       ],
     })
@@ -145,9 +168,19 @@ export async function getUserDashboardData(
 
   const documents: Document[] = projects.flatMap((p) => p.documents ?? []);
 
-  const recentActivity: Activity[] = (userDoc.recentActivity ?? [])
-    .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-    .slice(0, 5);
+  const recentActivityDocs = await Activity.find({
+    user: userDoc._id,
+  })
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .lean();
+
+  const recentActivity: Activity[] = recentActivityDocs.map((act) => ({
+    type: act.type,
+    action: act.action,
+    collection: act.collectionName,
+    time: act.createdAt?.toISOString() ?? new Date().toISOString(),
+  }));
 
   return {
     user: { _id: userDoc._id.toString(), name: userDoc.name },
@@ -336,4 +369,43 @@ async function getUserIdByEmail(email: string) {
   const user = await User.findOne({ email });
   if (!user) throw new Error("User not found");
   return user._id;
+}
+
+// Get document details by ID
+export async function getDocumentDetails(id: string) {
+  await connectDB();
+
+  const document = (await DocumentModel.findById(id)
+    .populate("owner", "name email")
+    .lean()) as PopulatedDocument | null;
+
+  if (!document) return null;
+
+  return {
+    _id: document._id.toString(),
+    name: document.name,
+    content: document.content,
+    createdAt: document.createdAt
+      ? new Date(document.createdAt).toISOString()
+      : new Date().toISOString(),
+
+    updatedAt: document.updatedAt
+      ? new Date(document.updatedAt).toISOString()
+      : new Date().toISOString(),
+    owner:
+      typeof document.owner === "object" && document.owner !== null
+        ? {
+            _id: document.owner._id.toString(),
+            name: document.owner.name,
+            email: document.owner.email,
+          }
+        : { _id: String(document.owner) },
+    project:
+      typeof document.project === "object" && document.project !== null
+        ? {
+            _id: document.project._id.toString(),
+            name: document.project.name,
+          }
+        : undefined,
+  };
 }

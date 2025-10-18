@@ -109,7 +109,7 @@ export default function ProjectCard({
         <Link href={`/projects/${project._id}`}>
           <Button
             variant="outline"
-            className="w-full mt-2 hover:bg-indigo-400/20 dark:hover:bg-indigo-400/30 dark:text-white"
+            className="w-full mt-2 duration-0 hover:bg-indigo-400/20 dark:hover:bg-indigo-400/30 dark:text-white"
           >
             View Details
           </Button>

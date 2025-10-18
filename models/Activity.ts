@@ -3,11 +3,14 @@ import { Schema, model, models } from "mongoose";
 const activitySchema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    action: String,
-    collectionName: String,
+    action: { type: String, default: "No action" },
+    collectionName: { type: String, default: "Unknown" },
     time: { type: Date, default: Date.now },
-    type: { type: String, enum: ["create", "update", "delete", "success"] },
-    metadata: { type: Object, default: {} },
+    type: {
+      type: String,
+      enum: ["delete", "join", "invite", "update", "success"],
+      required: true,
+    },
   },
   { timestamps: true }
 );

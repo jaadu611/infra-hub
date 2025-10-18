@@ -6,7 +6,7 @@ const apiRequestSchema = new Schema(
     endpoint: String,
     method: String,
     projectId: { type: Schema.Types.ObjectId, ref: "Project" },
-    status: { type: String, enum: ["success", "fail"] },
+    status: { type: String, enum: ["success", "failure"] },
     time: { type: Date, default: Date.now },
     metadata: { type: Object, default: {} },
   },

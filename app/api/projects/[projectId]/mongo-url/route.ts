@@ -21,7 +21,7 @@ export async function PATCH(
       projectId,
       { mongoUrl },
       { new: true }
-    ).lean<ProjectType>(); // <-- explicitly type lean to ProjectType
+    ).lean<ProjectType>();
 
     if (!updated) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });

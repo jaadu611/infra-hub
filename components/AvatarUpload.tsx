@@ -52,7 +52,7 @@ export function AvatarUpload({ currentImage, name }: AvatarUploadProps) {
           )}
         </div>
         <label className="absolute -bottom-2 -right-2 cursor-pointer bg-blue-400/30! rounded-full p-2 shadow-lg hover:bg-indigo-400/40! transition-colors">
-          <Upload className="w-4 h-4 text-white" />
+          <Upload className="w-4 h-4 text-gray-600 dark:text-white" />
           <input type="file" className="hidden" onChange={handleChange} />
         </label>
       </div>

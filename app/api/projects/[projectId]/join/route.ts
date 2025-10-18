@@ -26,7 +26,6 @@ export async function GET(
     if (!project)
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
-    // Type-safe lookup for the invite
     const invite = (project.pendingInvites as Invite[]).find(
       (inv) => inv.token === token
     );
@@ -37,12 +36,10 @@ export async function GET(
         { status: 400 }
       );
 
-    // Find the invited user by email
     const user = await User.findOne({ email: invite.email });
     if (!user)
       return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-    // Prevent duplicate membership
     const alreadyMember = project.members.some(
       (m: { user: string }) => m.user.toString() === user._id.toString()
     );

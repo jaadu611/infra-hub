@@ -66,9 +66,9 @@ export const InviteHeader: React.FC<InviteHeaderProps> = ({
           !invitedEmailsState.includes(user.email)
       );
       setResults(filtered);
+      setLoading(false);
     } catch {
       setResults([]);
-    } finally {
       setLoading(false);
     }
   };
@@ -149,7 +149,7 @@ export const InviteHeader: React.FC<InviteHeaderProps> = ({
                 </label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none flex justify-between items-center transition-colors transition-shadow duration-300 ease-in-out">
+                    <button className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none flex justify-between items-center transition-all duration-300 ease-in-out">
                       {selectedRole === "viewer"
                         ? "Viewer - Can view only"
                         : "Editor - Can edit and manage"}

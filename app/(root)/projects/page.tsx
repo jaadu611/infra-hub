@@ -88,7 +88,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="p-6 h-[80vh] transition-colors duration-300 bg-gray-50 text-gray-900 dark:bg-black dark:text-white">
+    <div className="p-6 h-[80vh] transition-colors duration-0 text-gray-900 bg-background/90 dark:text-white">
       {projects.length > 0 ? (
         <>
           <div className="flex justify-center items-center gap-4 mb-4">
@@ -97,7 +97,7 @@ export default function ProjectsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search projects..."
-              className="w-full p-2 rounded border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
+              className="w-full p-2 rounded border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder-gray-400"
             />
             <ProjectsPageHeader
               userEmail={userEmail}

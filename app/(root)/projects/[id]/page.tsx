@@ -29,7 +29,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   if (!project) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="p-6 rounded-full bg-red-200 dark:bg-red-800 mx-auto w-fit">
             <Database className="h-12 w-12 text-red-600 dark:text-red-300" />
@@ -53,7 +53,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     });
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+    <div className="min-h-screen dark:bg-background/90 text-gray-900 dark:text-white dark:border-gray-700 border">
       {/* Header */}
       <header className="relative p-6 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md shadow-md border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
