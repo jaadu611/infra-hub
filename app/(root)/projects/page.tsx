@@ -128,11 +128,7 @@ export default function ProjectsPage() {
           </div>
         </>
       ) : (
-        <div
-          className="flex flex-col items-center justify-center h-[86vh] text-center py-24 
-                        rounded-xl shadow-md border border-gray-200 bg-white text-gray-800
-                        dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors"
-        >
+        <div className="flex flex-col items-center justify-center min-h-[80vh] text-center py-24 rounded-xl shadow-md text-gray-800 bg-background/90 dark:text-gray-100 transition-colors">
           <FolderPlus className="w-12 h-12 text-indigo-500 dark:text-indigo-400 mb-4" />
           <h2 className="text-2xl font-bold mb-2">No projects yet</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">

@@ -28,7 +28,7 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
 
     const { token } = await inviteUserToProject(projectId, userId, role);
-    const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/projects/${projectId}/join?token=${token}`;
+    const inviteLink = `${process.env.NEXTAUTH_URL}/projects/${projectId}/join?token=${token}`;
 
     await sendInviteEmail({
       to: user.email,
