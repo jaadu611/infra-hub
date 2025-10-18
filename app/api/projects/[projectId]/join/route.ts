@@ -12,14 +12,14 @@ interface Invite {
 
 export async function GET(
   req: NextRequest,
-  context: { params: { projectId: string } }
-) {
-  const { projectId } = context.params;
-
+  { params }: { params: { projectId: string } }
+): Promise<NextResponse> {
   try {
     await connectDB();
 
     const token = req.nextUrl.searchParams.get("token");
+    const { projectId } = params;
+
     if (!token)
       return NextResponse.json({ error: "Missing token" }, { status: 400 });
 
@@ -30,6 +30,7 @@ export async function GET(
     const invite = (project.pendingInvites as Invite[]).find(
       (inv) => inv.token === token
     );
+
     if (!invite)
       return NextResponse.json(
         { error: "Invalid or expired invite" },
