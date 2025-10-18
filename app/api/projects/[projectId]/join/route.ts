@@ -50,6 +50,7 @@ export async function GET(
         { status: 200 }
       );
 
+    // ✅ Add member
     project.members.push({
       user: user._id,
       role: invite.role,
@@ -57,6 +58,10 @@ export async function GET(
 
     project.pendingInvites = project.pendingInvites.filter(
       (i: Invite) => i.token !== token
+    );
+
+    project.invitedEmails = (project.invitedEmails as string[]).filter(
+      (email: string) => email !== invite.email
     );
 
     await project.save();
