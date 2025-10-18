@@ -12,12 +12,9 @@ export default function ProjectsGrid({ initialProjects }: ProjectsGridProps) {
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/projects/delete/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const res = await fetch(`/api/projects/delete/${id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error("Failed to delete project");
 
       setProjects((prev) => prev.filter((p) => p._id !== id));
