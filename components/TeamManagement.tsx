@@ -35,7 +35,7 @@ export default function TeamManagement({
   });
 
   return (
-    <Card className="bg-gray-800/80 border-0 shadow-xl min-h-96 py-6! gap-0">
+    <Card className="dark:bg-gray-800/80 dark:border-gray-700 border-gray-200 shadow-xl min-h-96 py-6! gap-0">
       <CardHeader>
         <InviteHeader
           projectId={projectId}
@@ -60,13 +60,15 @@ export default function TeamManagement({
                 return (
                   <div
                     key={index}
-                    className="flex items-center gap-4 p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition"
+                    className="flex items-center gap-4 dark:border-gray-700 border-gray-300 border p-3 dark:bg-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg dark:hover:bg-gray-600 transition"
                   >
                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
                       {name[0].toUpperCase()}
                     </div>
                     <div className="flex flex-col">
-                      <span className="font-medium text-white">{name}</span>
+                      <span className="font-medium dark:text-white">
+                        {name}
+                      </span>
                       <span className="text-gray-400 text-sm">{email}</span>
                     </div>
                     <span

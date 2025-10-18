@@ -23,7 +23,7 @@ const ProjectDocument: React.FC<ProjectDocumentProps> = ({ documents }) => {
   };
 
   return (
-    <Card className="bg-gray-800/80 border-0 shadow-xl py-6!">
+    <Card className="dark:bg-gray-800/80 dark:border-gray-700 shadow-xl py-6! border border-gray-200">
       <CardHeader>
         <CardTitle className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/20">
@@ -38,7 +38,7 @@ const ProjectDocument: React.FC<ProjectDocumentProps> = ({ documents }) => {
             {documents.map((doc, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-3 bg-gray-700 rounded-lg"
+                className="flex items-center dark:border-gray-700 justify-between p-3 dark:bg-gray-700 bg-gray-200 border border-gray-300 rounded-lg"
               >
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-3">

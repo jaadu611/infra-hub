@@ -267,7 +267,11 @@ export async function getProjectById(id: string) {
 }
 
 // Invite user to project
-export async function inviteUserToProject(projectId: string, userId: string) {
+export async function inviteUserToProject(
+  projectId: string,
+  userId: string,
+  role: "viewer" | "editor"
+) {
   await connectDB();
 
   const project = await Project.findById(projectId);
@@ -276,13 +280,23 @@ export async function inviteUserToProject(projectId: string, userId: string) {
   const user = await User.findById(userId);
   if (!user) throw new Error("User not found");
 
+  const token = crypto.randomBytes(20).toString("hex");
+
   project.invitedEmails = project.invitedEmails ?? [];
+  project.pendingInvites = project.pendingInvites ?? [];
+
   if (!project.invitedEmails.includes(user.email)) {
     project.invitedEmails.push(user.email);
+    project.pendingInvites.push({
+      email: user.email,
+      role,
+      token,
+      createdAt: new Date(),
+    });
     await project.save();
   }
 
-  return project;
+  return { project, token };
 }
 
 // Get all projects for a user

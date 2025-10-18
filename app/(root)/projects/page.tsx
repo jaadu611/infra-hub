@@ -82,13 +82,13 @@ export default function ProjectsPage() {
   if (isLoading) {
     return (
       <div className="h-[80vh] flex items-center justify-center">
-        <Loader2 className="w-12 h-12 animate-spin text-indigo-400" />
+        <Loader2 className="w-12 h-12 animate-spin text-indigo-500 dark:text-indigo-400" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 h-[80vh]">
+    <div className="p-6 h-[80vh] transition-colors duration-300 bg-gray-50 text-gray-900 dark:bg-black dark:text-white">
       {projects.length > 0 ? (
         <>
           <div className="flex justify-center items-center gap-4 mb-4">
@@ -97,7 +97,7 @@ export default function ProjectsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search projects..."
-              className="w-full p-2 rounded border border-gray-600 bg-gray-800 text-white"
+              className="w-full p-2 rounded border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
             />
             <ProjectsPageHeader
               userEmail={userEmail}
@@ -117,19 +117,21 @@ export default function ProjectsPage() {
               />
             ))}
             {filteredProjects.length === 0 && (
-              <p className="text-gray-400 col-span-full text-center mt-6">
+              <p className="text-gray-600 dark:text-gray-400 col-span-full text-center mt-6">
                 No projects match your search.
               </p>
             )}
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center justify-center h-[86vh] text-center py-24 bg-gray-900 rounded-xl shadow-md">
-          <FolderPlus className="w-12 h-12 text-indigo-500 mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">
-            No projects yet
-          </h2>
-          <p className="text-gray-400 mb-6">
+        <div
+          className="flex flex-col items-center justify-center h-[86vh] text-center py-24 
+                        rounded-xl shadow-md border border-gray-200 bg-white text-gray-800
+                        dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors"
+        >
+          <FolderPlus className="w-12 h-12 text-indigo-500 dark:text-indigo-400 mb-4" />
+          <h2 className="text-2xl font-bold mb-2">No projects yet</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             You haven’t created any projects yet. Start by creating your first
             project.
           </p>

@@ -1,3 +1,4 @@
+// app/projects/[id]/page.tsx
 import React from "react";
 import { getProjectById, ProjectType } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,8 +15,8 @@ import {
 import DatabaseConfig from "@/components/DatabaseConfig";
 import SecurityAndAuth from "@/components/Security";
 import TeamManagement from "@/components/TeamManagement";
-import ProjectDocument from "@/components/ProjectDocument";
 import { auth } from "@/auth";
+import ProjectDocument from "@/components/ProjectDocument";
 
 interface ProjectPageProps {
   params: { id: string };
@@ -28,13 +29,15 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   if (!project) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center space-y-4">
-          <div className="p-6 rounded-full bg-red-800 mx-auto w-fit">
-            <Database className="h-12 w-12 text-red-600" />
+          <div className="p-6 rounded-full bg-red-200 dark:bg-red-800 mx-auto w-fit">
+            <Database className="h-12 w-12 text-red-600 dark:text-red-300" />
           </div>
-          <h2 className="text-2xl font-bold text-white">Project Not Found</h2>
-          <p className="text-gray-400">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Project Not Found
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400">
             The project you’re looking for doesn’t exist or has been removed.
           </p>
         </div>
@@ -50,9 +53,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     });
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
       {/* Header */}
-      <header className="relative p-6 bg-gray-900/70 backdrop-blur-md shadow-md border-b border-gray-700">
+      <header className="relative p-6 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md shadow-md border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-start md:items-center gap-4">
             <div className="p-3 rounded-xl bg-blue-600 text-white shadow-sm">
@@ -60,7 +63,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             </div>
             <div>
               <h1 className="text-3xl font-bold">{project.name}</h1>
-              <p className="text-gray-400 flex items-center gap-2 mt-1 text-sm">
+              <p className="flex items-center gap-2 mt-1 text-sm text-gray-600 dark:text-gray-400">
                 <Calendar className="h-4 w-4" />
                 Created {formatDate(project.createdAt)}
               </p>
@@ -72,6 +75,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         </div>
       </header>
 
+      {/* Stats Section */}
       <section className="max-w-7xl mx-auto p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           {
@@ -101,17 +105,23 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         ].map((stat, i) => (
           <Card
             key={i}
-            className="bg-gray-800 border-0 shadow-md backdrop-blur-sm"
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm"
           >
             <CardContent className="p-6 flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400">{stat.label}</p>
-                <p className="text-3xl font-bold">{stat.value}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {stat.label}
+                </p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {stat.value}
+                </p>
               </div>
               <div
                 className={`p-3 rounded-full bg-${stat.color}-100 dark:bg-${stat.color}-900/20`}
               >
-                <stat.icon className={`h-5 w-5 text-${stat.color}-600`} />
+                <stat.icon
+                  className={`h-5 w-5 text-${stat.color}-600 dark:text-${stat.color}-300`}
+                />
               </div>
             </CardContent>
           </Card>
