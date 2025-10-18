@@ -98,7 +98,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           },
           {
             label: "Invites Sent",
-            value: project.invitedEmails?.length ?? 0,
+            value: project.pendingInvites?.length ?? 0,
             icon: Mail,
             color: "orange",
           },
@@ -137,7 +137,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         />
         <TeamManagement
           members={project.members ?? []}
-          invitedEmails={project.invitedEmails ?? []}
+          invitedEmails={project.pendingInvites ?? []}
           projectId={id}
           currentUserEmail={session?.user?.id}
         />

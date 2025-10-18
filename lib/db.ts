@@ -96,6 +96,7 @@ interface PopulatedDocument {
 }
 
 export interface ProjectType {
+  pendingInvites: string[];
   _id: string;
   name: string;
   members?: Member[];
