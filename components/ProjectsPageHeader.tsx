@@ -6,26 +6,38 @@ import { Button } from "@/components/ui/button";
 import NewProjectModal from "./NewProjectModel";
 import { toast } from "sonner";
 import type { Project } from "@/app/(root)/projects/page";
+import { useSession } from "next-auth/react";
 
 interface ProjectsPageHeaderProps {
-  userEmail?: string;
   onProjectCreated?: (project: Project) => void;
 }
 
 export default function ProjectsPageHeader({
-  userEmail,
   onProjectCreated,
 }: ProjectsPageHeaderProps) {
   const [isModalOpen, setModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const { data: session } = useSession();
+  const userEmail = session?.user?.email as string;
 
   const handleFinish = async (data: {
     projectName: string;
+    description: string;
     email: string;
     mongoUrl?: string;
     authJsSecret?: string;
   }) => {
-    setIsCreating(true); // start loading
+    if (!data.email) {
+      toast.error("User email is required to create a project");
+      return;
+    }
+
+    if (!data.description.trim()) {
+      toast.error("Project description is required");
+      return;
+    }
+
+    setIsCreating(true);
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
@@ -36,7 +48,7 @@ export default function ProjectsPageHeader({
       if (!res.ok) throw new Error("Failed to create project");
 
       const newProject = await res.json();
-      toast.success("✅ New Project Created:", newProject);
+      toast.success("New Project Created!");
 
       onProjectCreated?.(newProject);
       setModalOpen(false);

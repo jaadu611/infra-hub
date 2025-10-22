@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,15 +15,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Mail, Lock } from "lucide-react";
-import { useUser } from "@/context/UserProvider";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { setUser } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,20 +36,14 @@ const LoginPage = () => {
       });
 
       if (result?.error) {
-        if (result.error === "CredentialsSignin") {
-          toast.error("Invalid email or password");
-        } else {
-          toast.error(result.error);
-        }
+        toast.error(
+          result.error === "CredentialsSignin"
+            ? "Invalid email or password"
+            : result.error
+        );
       } else {
-        const sessionRes = await fetch("/api/auth/session");
-        const session = await sessionRes.json();
-
-        if (session?.user) {
-          setUser(session.user);
-          toast.success("Welcome back!");
-          router.push("/");
-        }
+        toast.success("Welcome Back!");
+        router.push("/");
       }
     } catch (err) {
       toast.error("Login failed. Try again.");
@@ -63,7 +55,7 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-950 text-gray-100 p-4">
-      <Card className="w-full py-6! max-w-md bg-gray-900 border border-gray-800 shadow-xl rounded-2xl animate-in fade-in-50">
+      <Card className="w-full max-w-md py-6 bg-gray-900 border border-gray-800 shadow-xl rounded-2xl animate-in fade-in-50">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
             <div className="h-12 w-12 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />

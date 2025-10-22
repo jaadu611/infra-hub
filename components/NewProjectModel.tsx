@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -18,6 +19,7 @@ interface NewProjectModalProps {
   userEmail?: string;
   onFinish: (data: {
     projectName: string;
+    description: string;
     email: string;
     mongoUrl?: string;
     authJsSecret?: string;
@@ -32,6 +34,7 @@ export default function NewProjectModal({
 }: NewProjectModalProps) {
   const [step, setStep] = useState(1);
   const [projectName, setProjectName] = useState("");
+  const [description, setDescription] = useState("");
   const [email, setEmail] = useState<string | undefined>(userEmail);
   const [mongoUrl, setMongoUrl] = useState("");
   const [authJsSecret, setAuthJsSecret] = useState("");
@@ -42,7 +45,15 @@ export default function NewProjectModal({
   }, [userEmail, email]);
 
   const handleNext = () => {
-    if (step === 1 && projectName) {
+    if (step === 1) {
+      if (!projectName.trim()) {
+        toast.error("Project name is required");
+        return;
+      }
+      if (!description.trim()) {
+        toast.error("Project description is required");
+        return;
+      }
       setStep(2);
       return;
     }
@@ -58,6 +69,7 @@ export default function NewProjectModal({
       try {
         onFinish({
           projectName,
+          description: description.trim(),
           email,
           mongoUrl: mongoUrl || undefined,
           authJsSecret: authJsSecret || undefined,
@@ -66,6 +78,7 @@ export default function NewProjectModal({
         onClose();
         setStep(1);
         setProjectName("");
+        setDescription("");
         setMongoUrl("");
         setAuthJsSecret("");
       } catch (err) {
@@ -108,6 +121,21 @@ export default function NewProjectModal({
                   onChange={(e) => setProjectName(e.target.value)}
                   disabled={isLoading}
                 />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-sm font-medium mb-1">
+                  Project Description (Required)
+                </label>
+                <Textarea
+                  placeholder="Add a short description about your project"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  disabled={isLoading}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  This will be added to the initial README file.
+                </p>
               </div>
 
               <div className="flex flex-col mt-2">

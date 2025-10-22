@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Home, Key, Folder, User } from "lucide-react";
+import { Menu, Home, Folder, User } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 const mainItems = [
   { title: "Home", url: "/", icon: Home },
   { title: "Projects", url: "/projects", icon: Folder },
-  { title: "API Keys", url: "/api-keys", icon: Key },
   { title: "Profile", url: "/profile", icon: User },
 ];
 

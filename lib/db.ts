@@ -23,7 +23,7 @@ export interface Document {
   content?: string;
   addedBy?: string;
   createdAt?: string;
-  owner?: { _id: string; name?: string } | string;
+  owner?: { _id: string; name: string; email: string };
   projectId?: string;
 }
 
@@ -70,6 +70,7 @@ export interface DashboardData {
 export interface CreateProjectData {
   projectName: string;
   email: string;
+  description: string;
   mongoUrl?: string;
   authJsSecret?: string;
 }
@@ -221,11 +222,10 @@ export async function deleteProjectDocuments(projectId: string) {
   return { success: true, deletedCount: result.deletedCount };
 }
 
-// Create a new project
 export async function createProjectServer(data: CreateProjectData) {
   await connectDB();
 
-  const { projectName, email, mongoUrl, authJsSecret } = data;
+  const { projectName, email, mongoUrl, authJsSecret, description } = data;
   if (!projectName || !email) throw new Error("Missing required fields");
 
   const user = await User.findOne({ email });
@@ -252,12 +252,48 @@ export async function createProjectServer(data: CreateProjectData) {
     minute: "2-digit",
     hour12: true,
   });
+  const readmeContent = `# 🌟 Welcome to **${projectName}**
+
+${
+  description && description.trim().length > 0
+    ? description
+    : "_No description yet — tell your team what this project is about!_"
+}
+  
+---
+
+## 🧭 Overview
+This space is your **project dashboard** — where ideas, documentation, and teamwork come together.  
+You can use this README to outline your goals, architecture, or roadmap.
+
+---
+
+## 👥 Project Details
+- **Created by:** ${user.name} (${user.email})
+- **Created on:** ${formattedDate}
+
+---
+
+## 🚀 Quick Start
+1. 🗂️ Add and organize your project documents  
+2. 🤝 Invite teammates to collaborate  
+3. ⚙️ Connect your database and API keys  
+4. 🧠 Start exploring with your Autonomous Research Agent  
+
+---
+
+> 💡 **Tip:** Use Markdown to style your notes, code, and documentation beautifully.
+
+---
+
+### 🧑‍💻 _Happy building — your project begins here!_
+`;
 
   const initialDoc = await DocumentModel.create({
     owner: user._id,
     project: project._id,
     name: `README - ${projectName}`,
-    content: `# Welcome to ${projectName}\nCreated by ${user.name} on ${formattedDate}`,
+    content: readmeContent,
   });
 
   project.documents.push(initialDoc._id);
@@ -285,7 +321,6 @@ export async function createProjectServer(data: CreateProjectData) {
   };
 }
 
-// Get project by ID
 export async function getProjectById(id: string) {
   await connectDB();
 
@@ -293,14 +328,14 @@ export async function getProjectById(id: string) {
     .populate({ path: "members.user", select: "name email" })
     .populate({
       path: "documents",
-      options: { sort: { createdAt: -1 }, limit: 5 },
+      select: "_id name content createdAt owner",
+      options: { sort: { createdAt: -1 }, limit: 3 },
       populate: { path: "owner", select: "name email" },
     });
 
   return project ?? null;
 }
 
-// Invite user to project
 export async function inviteUserToProject(
   projectId: string,
   userId: string,
@@ -401,12 +436,5 @@ export async function getDocumentDetails(id: string) {
             email: document.owner.email,
           }
         : { _id: String(document.owner) },
-    project:
-      typeof document.project === "object" && document.project !== null
-        ? {
-            _id: document.project._id.toString(),
-            name: document.project.name,
-          }
-        : undefined,
   };
 }

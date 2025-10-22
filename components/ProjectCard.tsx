@@ -1,6 +1,6 @@
 "use client";
 
-import { Database, MoreVertical, Loader2 } from "lucide-react";
+import { Database, Loader2, Trash2 } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -9,12 +9,6 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 
 export type Member = {
@@ -50,7 +44,7 @@ export default function ProjectCard({
   };
 
   return (
-    <Card className="hover:shadow-elegant transition-shadow group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+    <Card className="hover:shadow-elegant transition-shadow group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 relative">
       <CardHeader className="pt-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -68,36 +62,21 @@ export default function ProjectCard({
             </div>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="opacity-0 transition-all duration-100 group-hover:opacity-100"
-              >
-                <MoreVertical className="h-4 w-4 text-gray-700 dark:text-gray-300" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600"
-            >
-              <DropdownMenuItem className="dark:text-white">
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem className="dark:text-white">
-                Export
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive flex items-center gap-2 dark:text-red-400"
-                onClick={() => onDelete(project._id)}
-                disabled={isDeleting}
-              >
-                {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Delete Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900 transition-colors"
+            onClick={() => onDelete(project._id)}
+            disabled={isDeleting}
+            title="Delete project"
+          >
+            {isDeleting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
+          </Button>
         </div>
       </CardHeader>
 

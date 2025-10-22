@@ -1,4 +1,3 @@
-// app/projects/[id]/join/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";

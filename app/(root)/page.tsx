@@ -1,32 +1,24 @@
 import { auth } from "@/auth";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
   Database,
   FileText,
   Users,
   Activity as ActivityIcon,
-  TrendingUp,
   ArrowUpRight,
   Clock,
   Folder,
-  LucideFolder,
   Plus,
   Edit,
   Trash2,
   Users as UsersIcon,
   Mail,
+  Sparkles,
+  Zap,
+  Target,
 } from "lucide-react";
 import { getUserDashboardData } from "@/lib/db";
 import Link from "next/link";
 
-// ------------------ Types ------------------
 interface Member {
   _id: string;
   name?: string;
@@ -37,6 +29,7 @@ interface Projects {
   _id: string;
   name: string;
   members?: Member[];
+  createdAt?: string;
 }
 
 type Document = {
@@ -80,13 +73,37 @@ export default async function DashboardPage() {
   const session = await auth();
 
   if (!session?.user?.email) {
-    return <p className="text-center mt-20 text-red-500">Please log in.</p>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-20 h-20 mx-auto rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+            <Users className="w-10 h-10 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+            Authentication Required
+          </h2>
+          <p className="text-gray-500">Please log in to view your dashboard.</p>
+        </div>
+      </div>
+    );
   }
 
   const rawData = await getUserDashboardData(session.user.email);
 
   if (!rawData) {
-    return <p className="text-center mt-20 text-red-500">User not found.</p>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-20 h-20 mx-auto rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+            <Users className="w-10 h-10 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+            User not found
+          </h2>
+          <p className="text-gray-500">Unable to load dashboard data.</p>
+        </div>
+      </div>
+    );
   }
 
   const data: DashboardData = {
@@ -113,6 +130,7 @@ export default async function DashboardPage() {
       .map((proj) => ({
         _id: proj._id ?? "unknown",
         name: proj.name ?? "Untitled Project",
+        createdAt: proj.createdAt,
         members: (proj.members ?? []).map((m) => ({
           _id: m._id ?? m.user?._id ?? "unknown",
           name: m.name ?? m.user?.name ?? "Unknown",
@@ -135,252 +153,314 @@ export default async function DashboardPage() {
 
   const { user, projects, documents, apiRequests, recentActivity } = data;
 
-  console.log(user);
+  const allMembers = projects.flatMap((p) => p.members ?? []);
+  const allUserIds = allMembers.map((m) => m._id).filter(Boolean);
+  const uniqueUserIds = Array.from(new Set(allUserIds));
+  const activeUserIds = uniqueUserIds.filter((id) => id !== user._id);
 
   const stats = [
     {
-      title: "Total Collections",
+      title: "Total Projects",
       value: projects.length.toString(),
       icon: Database,
-      change: projects.length ? `+${projects.length} this week` : "No data",
-      trend: projects.length ? "+16%" : "",
+      description: "Active projects",
       gradient: "from-purple-500 to-purple-700",
+      bgColor: "bg-purple-100 dark:bg-purple-900/30",
+      iconColor: "text-purple-600 dark:text-purple-400",
     },
     {
       title: "Documents",
       value: documents.length.toString(),
       icon: FileText,
-      change: documents.length ? `+${documents.length} today` : "No data",
-      trend: documents.length ? "+24%" : "",
+      description: "Total documents",
       gradient: "from-blue-500 to-cyan-500",
+      bgColor: "bg-blue-100 dark:bg-blue-900/30",
+      iconColor: "text-blue-600 dark:text-blue-400",
     },
     {
-      title: "Joined Users",
-      value: (() => {
-        const allMembers = projects.flatMap((p) => p.members ?? []);
-        const allUserIds = allMembers.map((m) => m._id).filter(Boolean);
-        const uniqueUserIds = Array.from(new Set(allUserIds));
-        const activeUserIds = uniqueUserIds.filter((id) => id !== user._id);
-        return activeUserIds.length.toString();
-      })(),
+      title: "Team Members",
+      value: activeUserIds.length.toString(),
       icon: Users,
-      change: "+0 this week",
-      trend: "+0%",
+      description: "Collaborators",
       gradient: "from-violet-500 to-purple-600",
+      bgColor: "bg-violet-100 dark:bg-violet-900/30",
+      iconColor: "text-violet-600 dark:text-violet-400",
     },
     {
       title: "API Requests",
       value: apiRequests.length.toString(),
       icon: ActivityIcon,
-      change: apiRequests.length
-        ? `+${apiRequests.length} from last week`
-        : "No data",
-      trend: apiRequests.length ? "+12%" : "",
+      description: "Total requests",
       gradient: "from-cyan-500 to-blue-600",
+      bgColor: "bg-cyan-100 dark:bg-cyan-900/30",
+      iconColor: "text-cyan-600 dark:text-cyan-400",
     },
   ];
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-fade-in">
-      {/* Header */}
-      <div
-        className="relative overflow-hidden rounded-2xl p-8 md:p-10 text-white shadow-glow"
-        style={{ background: "var(--gradient-primary)" }}
-      >
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl -ml-24 -mb-24" />
-        <div className="relative">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2 flex items-center">
+    <div className="space-y-8 animate-fade-in">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 p-8 md:p-12 text-white shadow-2xl">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-300 rounded-full blur-3xl"></div>
+        </div>
+        <div className="relative z-10 space-y-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm text-sm font-medium">
+            <Sparkles className="w-4 h-4" />
+            Dashboard Overview
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
             Welcome back, {user.name}! 👋
           </h1>
-          <p className="text-white/90 text-lg">
-            Here&apos;s what&apos;s happening with your backend today.
+          <p className="text-lg text-purple-100 max-w-2xl">
+            Here&apos;s what&apos;s happening with your projects and team today.
           </p>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card
+      {/* Stats Grid */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, index) => (
+          <div
             key={stat.title}
-            className="relative overflow-hidden py-6 border-0 shadow-elegant hover:shadow-glow transition-all duration-300 hover:-translate-y-1 group"
+            className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+            style={{ animationDelay: `${index * 100}ms` }}
           >
-            <div
-              className={`absolute inset-0 opacity-5 group-hover:opacity-15 transition-opacity rounded-xl bg-gradient-to-br ${stat.gradient}`}
-            />
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
+            {/* Optional gradient overlay on hover */}
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-gray-50 dark:to-gray-800/50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+            <div className="relative space-y-4 flex flex-col items-center text-center">
+              {/* Icon */}
               <div
-                className={`h-10 w-10 rounded-xl flex items-center justify-center shadow-lg bg-gradient-to-br ${stat.gradient}`}
+                className={`p-3 rounded-xl ${stat.bgColor} transition-transform duration-300 group-hover:-translate-y-2 group-hover:scale-110`}
               >
-                <stat.icon className="h-5 w-5 text-white" />
+                <stat.icon className={`h-6 w-6 ${stat.iconColor}`} />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline gap-2">
-                <div className="text-3xl font-bold text-foreground">
+
+              {/* Text */}
+              <div>
+                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                   {stat.value}
-                </div>
-                {stat.trend && (
-                  <div className="flex items-center text-xs font-medium text-green-500">
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                    {stat.trend}
-                  </div>
-                )}
+                </p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-1">
+                  {stat.title}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  {stat.description}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                <ArrowUpRight className="h-3 w-3 text-blue-400" />
-                {stat.change}
-              </p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Activity + Projects */}
-      <div className="grid gap-4 min-h-[250px] md:gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Activity */}
-        <Card className="border-0 shadow-elegant py-6 gap-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xl">Recent Activity</CardTitle>
-            <CardDescription>Latest updates from your backend</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-800/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-500" />
+                  Recent Activity
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Latest updates from your workspace
+                </p>
+              </div>
+              {recentActivity.length > 0 && (
+                <span className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-semibold">
+                  {recentActivity.length} recent
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="p-6">
             {recentActivity.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Clock className="h-16 w-16 mb-4 text-blue-400/70" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
+                <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <Clock className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   No Recent Activity
                 </h3>
-                <p className="text-sm text-muted-foreground max-w-xs">
-                  No activities have been performed recently. Once a team member
-                  joins, updates a document, or makes changes, it will appear
-                  here.
+                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+                  Your recent activities will appear here. Start by creating a
+                  project or document.
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
-                {recentActivity.map((activity, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-400/20 transition-colors group shadow-sm"
-                  >
-                    {/* Activity Icon */}
+                {recentActivity.map((activity, index) => {
+                  const activityConfig = {
+                    create: {
+                      icon: Plus,
+                      color: "bg-green-500",
+                      label: "Created",
+                    },
+                    update: {
+                      icon: Edit,
+                      color: "bg-blue-500",
+                      label: "Updated",
+                    },
+                    delete: {
+                      icon: Trash2,
+                      color: "bg-red-500",
+                      label: "Deleted",
+                    },
+                    join: {
+                      icon: UsersIcon,
+                      color: "bg-purple-500",
+                      label: "Joined",
+                    },
+                    invite: {
+                      icon: Mail,
+                      color: "bg-indigo-500",
+                      label: "Invited",
+                    },
+                  };
+
+                  const config =
+                    activityConfig[activity.type] || activityConfig.create;
+                  const Icon = config.icon;
+
+                  return (
                     <div
-                      className={`flex-shrink-0 m-auto h-10 w-10 rounded-lg flex items-center justify-center text-white shadow-md ${
-                        activity.type === "create"
-                          ? "bg-blue-400 dark:bg-blue-500"
-                          : activity.type === "update"
-                          ? "bg-yellow-400 dark:bg-yellow-500"
-                          : activity.type === "delete"
-                          ? "bg-red-400 dark:bg-red-500"
-                          : activity.type === "join"
-                          ? "bg-purple-400 dark:bg-purple-500"
-                          : "bg-teal-400 dark:bg-teal-500"
-                      }`}
+                      key={index}
+                      className="group flex items-start gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all duration-200"
                     >
-                      {activity.type === "create" && (
-                        <Plus className="h-5 w-5" />
-                      )}
-                      {activity.type === "update" && (
-                        <Edit className="h-5 w-5" />
-                      )}
-                      {activity.type === "delete" && (
-                        <Trash2 className="h-5 w-5" />
-                      )}
-                      {activity.type === "join" && (
-                        <UsersIcon className="h-5 w-5" />
-                      )}
-                      {activity.type === "invite" && (
-                        <Mail className="h-5 w-5" />
-                      )}
-                    </div>
+                      <div
+                        className={`flex-shrink-0 w-10 h-10 rounded-lg ${config.color} flex items-center justify-center shadow-md`}
+                      >
+                        <Icon className="h-5 w-5 text-white" />
+                      </div>
 
-                    {/* Activity Content */}
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <p className="text-sm font-medium text-foreground dark:text-white truncate">
-                        {activity.action}
-                      </p>
-                      <p className="text-xs font-mono flex flex-col max-w-40 text-muted-foreground dark:text-gray-400 truncate">
-                        <span>by: {user.name}</span>
-                        <span>Project: {activity.collection}</span>
-                      </p>
-                    </div>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {activity.action}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                          <span className="px-2 py-0.5 rounded-md bg-gray-200 dark:bg-gray-700 font-medium">
+                            {activity.collection}
+                          </span>
+                          <span>•</span>
+                          <span>{user.name}</span>
+                        </div>
+                      </div>
 
-                    {/* Activity Timestamp */}
-                    <span className="text-xs text-muted-foreground dark:text-gray-400 whitespace-nowrap">
-                      {activity.time}
-                    </span>
-                  </div>
-                ))}
+                      <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        {new Date(activity.time).toLocaleTimeString("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Recent Projects */}
-        <Card className="border-0 shadow-elegant py-6 gap-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xl">Recent Projects</CardTitle>
-            <CardDescription>
-              Projects you recently created or joined
-            </CardDescription>
-          </CardHeader>
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-800/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-purple-500" />
+                  Recent Projects
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Your latest projects
+                </p>
+              </div>
+              {projects.length > 0 && (
+                <Link
+                  href="/projects"
+                  className="text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1"
+                >
+                  View all
+                  <ArrowUpRight className="w-4 h-4" />
+                </Link>
+              )}
+            </div>
+          </div>
 
-          <CardContent>
+          <div className="p-6">
             {projects.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Folder className="h-16 w-16 mb-4 text-blue-400/70" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
+                <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <Folder className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
                   No Projects Yet
                 </h3>
-                <p className="text-sm text-muted-foreground max-w-xs">
-                  You haven’t created or joined any projects yet. Once you do,
-                  they’ll appear here for quick access.
+                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mb-6">
+                  Create your first project to get started with organizing your
+                  work.
                 </p>
+                <Link
+                  href="/new-project"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all shadow-md hover:shadow-lg"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Project
+                </Link>
               </div>
             ) : (
               <div className="space-y-3">
-                {projects.slice(0, 5).map((project) => (
-                  <div
+                {projects.map((project) => (
+                  <Link
                     key={project._id}
-                    className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-400/20 transition-colors group"
+                    href={`/projects/${project._id}`}
+                    className="group flex items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-200"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-white font-semibold shadow-md">
-                        <LucideFolder className="h-5 w-5" />
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold shadow-md group-hover:scale-110 transition-transform">
+                        {project.name[0]?.toUpperCase() || "P"}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground dark:text-white">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                           {project.name}
                         </p>
-                        <p className="text-xs text-muted-foreground dark:text-gray-400">
-                          {project.members?.length ?? 0} member
-                          {project.members && project.members.length !== 1
-                            ? "s"
-                            : ""}
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {project.createdAt
+                            ? new Date(project.createdAt).toLocaleDateString()
+                            : "No date"}
                         </p>
                       </div>
                     </div>
-                    <Link href={`/projects/${project._id}`}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-400/40 duration-200 text-blue-500"
-                      >
-                        View
-                        <ArrowUpRight className="ml-1 h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="flex -space-x-2">
+                        {(project.members ?? [])
+                          .slice(0, 3)
+                          .map((member, idx) => (
+                            <div
+                              key={idx}
+                              className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-800 text-purple-700 dark:text-purple-300 flex items-center justify-center text-xs font-semibold border border-white dark:border-gray-800"
+                              title={member.name}
+                            >
+                              {member.name?.[0]?.toUpperCase() || "U"}
+                            </div>
+                          ))}
+                      </div>
+                      {project.members && project.members.length > 3 && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          +{project.members.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-// app/projects/[id]/page.tsx
 import React from "react";
 import { getProjectById, ProjectType } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,11 +18,11 @@ import { auth } from "@/auth";
 import ProjectDocument from "@/components/ProjectDocument";
 
 interface ProjectPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
-  const id = params.id;
+  const { id } = await params;
   const project: ProjectType | null = await getProjectById(id);
   const session = await auth();
 
@@ -53,9 +52,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     });
 
   return (
-    <div className="min-h-screen dark:bg-background/90 text-gray-900 dark:text-white dark:border-gray-700 border">
+    <div className="min-h-screen dark:bg-background/90 text-gray-900 dark:text-white">
       {/* Header */}
-      <header className="relative p-6 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md shadow-md border-b border-gray-200 dark:border-gray-700">
+      <header className="relative p-6 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md shadow-md border border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-start md:items-center gap-4">
             <div className="p-3 rounded-xl bg-blue-600 text-white shadow-sm">
@@ -76,7 +75,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       </header>
 
       {/* Stats Section */}
-      <section className="max-w-7xl mx-auto p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="mx-auto py-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           {
             label: "Documents",
@@ -129,7 +128,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       </section>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 pb-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <main className="mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
         <DatabaseConfig mongoUrl={project.mongoUrl} projectId={id} />
         <SecurityAndAuth
           apiKey={project.apiKey}
@@ -142,16 +141,14 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           currentUserEmail={session?.user?.id}
         />
         <ProjectDocument
+          projectId={project._id.toString()}
           documents={project.documents!.map((doc) => ({
-            ...doc,
+            id: doc._id.toString(),
             name: doc.name ?? "Untitled",
             createdAt: doc.createdAt ?? new Date().toISOString(),
-            addedBy:
-              typeof doc.addedBy === "object"
-                ? doc.addedBy
-                : doc.addedBy
-                ? { name: doc.addedBy, email: "" }
-                : undefined,
+            owner: doc.owner
+              ? { name: doc.owner.name, email: doc.owner.email }
+              : undefined,
           }))}
         />
       </main>
