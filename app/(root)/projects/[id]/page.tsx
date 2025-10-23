@@ -16,6 +16,7 @@ import SecurityAndAuth from "@/components/Security";
 import TeamManagement from "@/components/TeamManagement";
 import { auth } from "@/auth";
 import ProjectDocument from "@/components/ProjectDocument";
+import ProjectModels from "@/components/ProjectModels";
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -56,6 +57,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       {/* Header */}
       <header className="relative p-6 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md shadow-md border border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          {/* Project Title */}
           <div className="flex items-start md:items-center gap-4">
             <div className="p-3 rounded-xl bg-blue-600 text-white shadow-sm">
               <Database className="h-6 w-6" />
@@ -68,9 +70,13 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" /> Settings
-          </Button>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 items-center">
+            <Button variant="outline" size="sm">
+              <Settings className="h-4 w-4 mr-2" /> Settings
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -151,6 +157,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               : undefined,
           }))}
         />
+        <ProjectModels projectId={project._id.toString()} />
       </main>
     </div>
   );

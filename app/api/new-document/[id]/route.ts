@@ -16,7 +16,6 @@ export async function POST(
     const { name, content, ownerEmail } = body;
 
     if (!name || !content || !ownerEmail) {
-      console.log("Validation failed:", { name, content, ownerEmail });
       return NextResponse.json(
         {
           success: false,

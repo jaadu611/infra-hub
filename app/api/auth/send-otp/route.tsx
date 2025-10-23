@@ -26,8 +26,6 @@ export async function POST(req: Request) {
     user.otpExpiresAt = expiresAt;
     await user.save();
 
-    console.log(user);
-
     await sendOtpEmail({ to: email, otp: otp.toString() });
 
     return NextResponse.json({

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Copy, Database, Zap, Check, Save } from "lucide-react";
+import { Copy, Database, Zap, Check, Save, PlugZap } from "lucide-react";
 import { Separator } from "@radix-ui/react-separator";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -21,6 +21,8 @@ const DatabaseConfig: React.FC<DatabaseConfigProps> = ({
   const [url, setUrl] = useState(mongoUrl);
   const [saving, setSaving] = useState(false);
   const [isChanged, setIsChanged] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     setIsChanged(url !== mongoUrl);
@@ -55,6 +57,29 @@ const DatabaseConfig: React.FC<DatabaseConfigProps> = ({
       toast.error("Failed to update MongoDB URL");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    try {
+      setVerifying(true);
+
+      const res = await fetch(`/api/projects/connect/${projectId}`, {
+        method: "POST",
+      });
+      const data = await res.json();
+
+      if (!res.ok)
+        throw new Error(data.error || "Failed to verify MongoDB URL");
+
+      toast.success("MongoDB URL is valid!");
+      setIsConnected(true);
+    } catch (err) {
+      console.error(err);
+      toast.error("Verification failed. Check your MongoDB URL.");
+      setIsConnected(false);
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -113,22 +138,71 @@ const DatabaseConfig: React.FC<DatabaseConfigProps> = ({
 
         <Separator className="border-gray-300 dark:border-gray-600" />
 
-        <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <div
+          className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+            isConnected
+              ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+              : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+          }`}
+        >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/20">
-              <Zap className="h-4 w-4 text-green-600 dark:text-green-300" />
+            <div
+              className={`p-2 rounded-full ${
+                isConnected
+                  ? "bg-green-100 dark:bg-green-900/20"
+                  : "bg-yellow-100 dark:bg-yellow-900/20"
+              }`}
+            >
+              <Zap
+                className={`h-4 w-4 ${
+                  isConnected
+                    ? "text-green-600 dark:text-green-300"
+                    : "text-yellow-600 dark:text-yellow-300"
+                }`}
+              />
             </div>
             <div>
-              <p className="font-medium text-green-700 dark:text-green-200">
+              <p
+                className={`font-medium ${
+                  isConnected
+                    ? "text-green-700 dark:text-green-200"
+                    : "text-yellow-700 dark:text-yellow-200"
+                }`}
+              >
                 Connection Status
               </p>
-              <p className="text-sm text-green-600 dark:text-green-400">
-                Active and healthy
+              <p
+                className={`text-sm ${
+                  isConnected
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-yellow-600 dark:text-yellow-400"
+                }`}
+              >
+                {isConnected ? "Active and healthy" : "Not verified yet"}
               </p>
             </div>
           </div>
-          <Button className="px-3 py-1 text-sm rounded-sm bg-red-600/70 dark:bg-red-600/40 dark:hover:bg-red-600/70 text-white hover:bg-red-600 border border-red-700 shadow-sm">
-            Disconnect
+
+          <Button
+            disabled={verifying}
+            onClick={handleVerify}
+            className={`px-3 py-1 text-sm rounded-sm text-white shadow-sm ${
+              isConnected
+                ? "bg-green-600 pointer-events-none"
+                : "bg-blue-600/70 hover:bg-blue-600 dark:bg-blue-600/40 dark:hover:bg-blue-600/70"
+            }`}
+          >
+            {verifying ? (
+              "Verifying..."
+            ) : isConnected ? (
+              <>
+                <PlugZap className="w-4 h-4 mr-1" /> Verified
+              </>
+            ) : (
+              <>
+                <PlugZap className="w-4 h-4 mr-1" /> Verify URL
+              </>
+            )}
           </Button>
         </div>
       </CardContent>
