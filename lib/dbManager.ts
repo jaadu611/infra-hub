@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import Project from "@/models/Project";
 import mongoose from "mongoose";
 
 // Types for caching
@@ -40,33 +41,42 @@ export function getProjectConnection(projectId: string) {
   return connectionCache[projectId];
 }
 
-/**
- * Create or fetch a model in the project DB
- * @param projectId
- * @param modelName
- * @param schemaDefinition Optional schema (can be empty)
- */
-export function getOrCreateProjectModel(
+export async function getOrCreateProjectModel(
   projectId: string,
   modelName: string,
-  schemaDefinition: mongoose.SchemaDefinition
+  schema: mongoose.SchemaDefinition
 ) {
   const conn = getProjectConnection(projectId);
   if (!conn) throw new Error("Project DB not connected");
 
   if (!modelCache[projectId]) modelCache[projectId] = {};
 
-  // Return cached model if exists
   if (modelCache[projectId][modelName]) return modelCache[projectId][modelName];
 
-  // Allow any fields for now
-  const schema = new mongoose.Schema(schemaDefinition || {}, {
+  // Create schema in project DB
+  const mongooseSchema = new mongoose.Schema(schema || {}, {
     timestamps: true,
-    strict: false, // important: allow saving arbitrary fields
+    strict: true,
   });
 
-  const model = conn.model(modelName, schema);
+  const model = conn.model(modelName, mongooseSchema);
   modelCache[projectId][modelName] = model;
+
+  // Update Project document to store model schema
+  await Project.findByIdAndUpdate(
+    projectId,
+    {
+      $push: {
+        models: {
+          name: modelName,
+          schema: schema,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+    },
+    { new: true, upsert: true }
+  );
 
   return model;
 }
@@ -76,16 +86,43 @@ export function getOrCreateProjectModel(
  */
 export async function getProjectModelNames(
   projectId: string
-): Promise<string[]> {
+): Promise<{ _id: string; name: string }[]> {
   const conn = getProjectConnection(projectId);
   if (!conn) throw new Error("Project DB not connected");
 
   const cachedModels = modelCache[projectId];
-  if (cachedModels && Object.keys(cachedModels).length > 0)
-    return Object.keys(cachedModels);
+  const results: { _id: string; name: string }[] = [];
 
+  if (cachedModels && Object.keys(cachedModels).length > 0) {
+    for (const modelName of Object.keys(cachedModels)) {
+      const Model = cachedModels[modelName];
+      const doc = (await Model.findOne({}, "_id name").lean()) as {
+        _id?: any;
+      } | null;
+      if (doc && doc._id != null) {
+        results.push({ _id: doc._id.toString(), name: modelName });
+      } else {
+        // If no documents exist yet, just return name with dummy _id
+        results.push({ _id: modelName, name: modelName });
+      }
+    }
+    return results;
+  }
+
+  // If no cached models, get collections from DB
   const collections = await conn.db!.listCollections().toArray();
-  return collections.map((c) => c.name);
+
+  for (const coll of collections) {
+    const collection = conn.db!.collection(coll.name);
+    const doc = await collection.findOne({}, { projection: { _id: 1 } });
+    if (doc) {
+      results.push({ _id: doc._id.toString(), name: coll.name });
+    } else {
+      results.push({ _id: coll.name, name: coll.name });
+    }
+  }
+
+  return results;
 }
 
 // Cleanup disconnected connections every minute

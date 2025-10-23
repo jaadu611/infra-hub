@@ -7,6 +7,8 @@ import {
 import Project from "@/models/Project";
 import { connectDB } from "@/lib/mongodb";
 
+type ModelDoc = { _id: { toString(): string } | string; name: string };
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -23,7 +25,14 @@ export async function GET(
 
   try {
     await connectToProjectDB(projectId, project.mongoUrl);
-    const models = await getProjectModelNames(projectId);
+
+    const modelDocs = await getProjectModelNames(projectId);
+
+    const models = modelDocs.map((m: ModelDoc) => ({
+      _id: typeof m._id === "string" ? m._id : m._id.toString(),
+      name: m.name,
+    }));
+
     return NextResponse.json({ models });
   } catch (err) {
     console.error(err);
@@ -66,7 +75,7 @@ export async function POST(
       );
     }
 
-    getOrCreateProjectModel(projectId, modelName, schema);
+    await getOrCreateProjectModel(projectId, modelName, schema);
 
     const models = await getProjectModelNames(projectId);
 
