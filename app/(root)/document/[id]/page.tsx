@@ -1,9 +1,85 @@
-import { notFound } from "next/navigation";
+import React from "react";
+import { notFound, redirect } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getDocumentDetails } from "@/lib/db";
-import { Code2, Plus, RefreshCcw, Tag, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Code2,
+  Plus,
+  RefreshCcw,
+  Tag,
+  Trash2,
+  User,
+} from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownClient";
+import { connectDB } from "@/lib/mongodb";
+import Document from "@/models/Docs";
+import Project from "@/models/Project";
+import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import Activity from "@/models/Activity";
+import userModel from "@/models/User";
 
+//
+// ✅ SERVER ACTION — deleteDocument
+//
+async function deleteDocument(formData: FormData) {
+  "use server";
+
+  const documentId = formData.get("documentId") as string;
+  let projectId = formData.get("projectId");
+
+  if (!documentId) return;
+
+  await connectDB();
+
+  // If projectId is an object or invalid, normalize it
+  if (projectId && typeof projectId === "object") {
+    projectId = projectId.toString();
+  }
+
+  // Remove the document reference from the project if it exists
+  if (projectId) {
+    const project = await Project.findById(projectId);
+    if (project) {
+      project.documents = project.documents.filter(
+        (doc: { toString: () => string }) => doc.toString() !== documentId
+      );
+      await project.save();
+    }
+  }
+
+  // Delete the document itself
+  const deletedDoc = await Document.findByIdAndDelete(documentId);
+
+  // ✅ Create an Activity log
+  const session = await auth();
+  const userEmail = session?.user?.email;
+  const user = userEmail ? await userModel.findOne({ email: userEmail }) : null;
+
+  if (user && deletedDoc) {
+    await Activity.create({
+      user: user._id,
+      action: `Deleted document "${deletedDoc.name}"`,
+      collectionName: "Document",
+      type: "delete",
+    });
+  }
+
+  // Revalidate and redirect back to the project page
+  if (projectId) {
+    revalidatePath(`/projects/${projectId}`);
+    redirect(`/projects/${projectId}`);
+  } else {
+    redirect(`/projects`);
+  }
+}
+
+//
+// ✅ PAGE COMPONENT — DocumentPage
+//
 export default async function DocumentPage({
   params,
 }: {
@@ -13,17 +89,78 @@ export default async function DocumentPage({
   const document = await getDocumentDetails(id);
   if (!document) notFound();
 
+  const session = await auth();
+  const currentUserEmail = session?.user?.email;
+  const userId = session?.user?.id;
+
+  // Determine ownership
+  const isOwner =
+    (typeof document.owner === "string" && document.owner === userId) ||
+    (typeof document.owner === "object" &&
+      document.owner?.email === currentUserEmail);
+
   return (
-    <div className="h-[654px] flex flex-col bg-background text-gray-900 dark:text-gray-100">
+    <div className="h-full flex flex-col bg-background text-gray-900 dark:text-gray-100">
       <div className="flex flex-1 overflow-hidden">
-        <Card className="flex-1 py-4 gap-0 overflow-y-auto m-0 mr-6 shadow-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <CardContent className="h-full overflow-y-auto prose dark:prose-invert max-w-none px-4">
+        {/* MAIN CONTENT */}
+        <Card className="flex-1 py-2 gap-0 overflow-y-auto m-0 mr-6 shadow-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <CardContent className="h-full overflow-y-auto prose dark:prose-invert max-w-none px-4 relative">
+            {/* 🔹 Top Toolbar (Back + Delete if owner) */}
+            <div className="flex items-center justify-between mb-2 sticky top-0 bg-gray-50 dark:bg-gray-800 z-20 py-2 px-1 border-b border-gray-200 dark:border-gray-700">
+              <Link
+                href={`/projects/${
+                  typeof document.project === "object"
+                    ? document?.project?._id
+                    : document.project
+                }`}
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="group mb-2 hover:border-blue-400 dark:hover:border-blue-600 transition-all"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                  Back to Project
+                </Button>
+              </Link>
+
+              {isOwner && (
+                <form action={deleteDocument}>
+                  <input
+                    type="hidden"
+                    name="documentId"
+                    value={document._id.toString()}
+                  />
+                  {document.project && (
+                    <input
+                      type="hidden"
+                      name="projectId"
+                      value={
+                        typeof document.project === "object"
+                          ? document.project._id
+                          : document.project
+                      }
+                    />
+                  )}
+                  <button
+                    type="submit"
+                    title="Delete document"
+                    className="p-2 absolute top-2 right-0 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </form>
+              )}
+            </div>
+
+            {/* 🔹 Document Content */}
             <MarkdownRenderer
               content={document.content || "No content available."}
             />
           </CardContent>
         </Card>
 
+        {/* SIDEBAR */}
         <Card className="w-80 py-6 shrink-0 m-0 gap-0 shadow-xl border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 overflow-hidden">
           <CardHeader className="border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm pb-4">
             <div className="flex items-center gap-3">
@@ -135,6 +272,7 @@ export default async function DocumentPage({
               </div>
             </div>
 
+            {/* Document ID */}
             <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-2 mb-2">
                 <Code2 className="w-4 h-4 text-gray-400" />

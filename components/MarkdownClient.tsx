@@ -23,7 +23,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
     // Headings
     h1({ children }) {
       return (
-        <h1 className="text-4xl font-extrabold mb-6 bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent tracking-tight">
+        <h1 className="text-4xl font-extrabold mb-5 bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
           {children}
         </h1>
       );

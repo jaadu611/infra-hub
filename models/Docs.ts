@@ -7,6 +7,11 @@ const documentSchema = new Schema(
       ref: "User",
       required: true,
     },
+    project: {
+      type: Schema.Types.ObjectId,
+      ref: "Project",
+      required: false,
+    },
     name: { type: String, required: true },
     content: { type: String, required: true },
   },

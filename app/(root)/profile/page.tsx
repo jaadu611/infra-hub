@@ -24,10 +24,10 @@ export default async function ProfileSettings() {
   const session = await auth();
   const user = session?.user as UserWithCompany | undefined;
 
-  const name = user?.name ?? "John Doe";
-  const email = user?.email ?? "john@example.com";
-  const company = user?.company ?? "Acme Inc";
-  const image = user?.image ?? "";
+  const name = user?.name;
+  const email = user?.email;
+  const company = user?.company;
+  const image = user?.image;
 
   return (
     <div className="bg-slate-50 dark:bg-slate-950">
@@ -59,7 +59,7 @@ export default async function ProfileSettings() {
           className="p-8 flex flex-col gap-6"
         >
           <div className="flex justify-center">
-            <AvatarUpload currentImage={image} name={name} />
+            <AvatarUpload currentImage={image} name={name ?? ""} />
           </div>
 
           {/* Form Fields */}

@@ -24,7 +24,7 @@ export default function ProjectsPageHeader({
     projectName: string;
     description: string;
     email: string;
-    mongoUrl?: string;
+    mongoUrl: string;
     authJsSecret?: string;
   }) => {
     if (!data.email) {
@@ -34,6 +34,11 @@ export default function ProjectsPageHeader({
 
     if (!data.description.trim()) {
       toast.error("Project description is required");
+      return;
+    }
+
+    if (!data.mongoUrl.trim()) {
+      toast.error("MongoDB URL is required");
       return;
     }
 

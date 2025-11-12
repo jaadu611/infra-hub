@@ -9,9 +9,15 @@ import {
   Trash2,
   TrendingUp,
   User,
+  ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/auth";
+import Document from "@/models/Docs";
+import { revalidatePath } from "next/cache";
+import { Button } from "@/components/ui/button";
+import Activity from "@/models/Activity";
+import userModel from "@/models/User";
 
 interface OwnerType {
   _id: string;
@@ -35,6 +41,45 @@ interface ProjectType {
   members: { user: { email: string }; role: string }[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+async function deleteDocument(formData: FormData) {
+  "use server";
+
+  const projectId = formData.get("projectId") as string;
+  const documentId = formData.get("documentId") as string;
+  const userEmail = formData.get("userEmail") as string;
+
+  if (!projectId || !documentId) return;
+
+  await connectDB();
+
+  const project = await Project.findById(projectId);
+  if (!project) return;
+
+  project.documents = project.documents.filter(
+    (doc: string) => doc.toString() !== documentId
+  );
+  await project.save();
+
+  // ✅ Delete the actual document
+  const deletedDoc = await Document.findByIdAndDelete(documentId);
+
+  // ✅ Log the activity
+  try {
+    const user = userEmail && (await userModel.findOne({ email: userEmail }));
+    await Activity.create({
+      user: user?._id,
+      action: `Deleted document "${deletedDoc?.name || "Untitled"}"`,
+      collectionName: "Document",
+      type: "delete",
+    });
+  } catch (err) {
+    console.error("Failed to log activity:", err);
+  }
+
+  // ✅ Revalidate and redirect back to the project page
+  revalidatePath(`/projects/${projectId}`);
 }
 
 const Page = async ({ params }: { params: { id: string } }) => {
@@ -94,8 +139,18 @@ const Page = async ({ params }: { params: { id: string } }) => {
   );
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8">
       {/* Hero Header */}
+      <Link href={`/projects/${project._id}`}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="group mb-6 hover:border-blue-400 dark:hover:border-blue-600 transition-all"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+          Back to Project
+        </Button>
+      </Link>
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 p-8 text-white shadow-2xl">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="absolute inset-0 opacity-10">
@@ -191,20 +246,17 @@ const Page = async ({ params }: { params: { id: string } }) => {
             return (
               <div
                 key={doc._id}
-                className="group relative rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow-2xl hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 overflow-hidden"
+                className="group p-6 relative rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow-2xl hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 overflow-hidden"
               >
-                {/* Gradient Overlay on Hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-indigo-500/0 group-hover:from-purple-500/5 group-hover:to-indigo-500/5 transition-all pointer-events-none"></div>
-
-                <div className="relative p-6 space-y-4">
+                <div className="relative space-y-4">
                   {/* Document Header */}
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 bg-none">
                     <Link
                       href={`/documents/view/${doc._id}`}
                       className="flex-1 min-w-0"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-md group-hover:scale-110 group-hover:rotate-3 transition-transform">
+                        <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-md">
                           <FileText className="h-6 w-6 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -224,12 +276,25 @@ const Page = async ({ params }: { params: { id: string } }) => {
                     {/* Action Buttons */}
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {canDelete && (
-                        <button
-                          className="p-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                          title="Delete document"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <form action={deleteDocument}>
+                          <input
+                            type="hidden"
+                            name="projectId"
+                            value={project._id}
+                          />
+                          <input
+                            type="hidden"
+                            name="documentId"
+                            value={doc._id}
+                          />
+                          <button
+                            type="submit"
+                            title="Delete document"
+                            className="p-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </form>
                       )}
                     </div>
                   </div>

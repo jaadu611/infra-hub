@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Project from "@/models/Project";
 import mongoose from "mongoose";
+import { connectDB } from "./mongodb";
 
 // Types for caching
 type ConnectionCache = Record<string, mongoose.Connection>;
@@ -14,7 +15,7 @@ export const modelCache: ModelCache = {};
  * Connect to a project's MongoDB and cache it
  */
 export async function connectToProjectDB(projectId: string, mongoUrl: string) {
-  if (!mongoUrl || mongoUrl === "no-url") {
+  if (!mongoUrl) {
     throw new Error("Invalid MongoDB URL provided");
   }
 
@@ -44,16 +45,23 @@ export function getProjectConnection(projectId: string) {
 export async function getOrCreateProjectModel(
   projectId: string,
   modelName: string,
-  schema: mongoose.SchemaDefinition
+  schema?: mongoose.SchemaDefinition
 ) {
   const conn = getProjectConnection(projectId);
   if (!conn) throw new Error("Project DB not connected");
 
   if (!modelCache[projectId]) modelCache[projectId] = {};
 
+  // ✅ Return from cache if already exists
   if (modelCache[projectId][modelName]) return modelCache[projectId][modelName];
 
-  // Create schema in project DB
+  // ✅ Check if model exists in Mongoose connection already
+  if (conn.models[modelName]) {
+    modelCache[projectId][modelName] = conn.models[modelName];
+    return conn.models[modelName];
+  }
+
+  // 🧱 Create schema
   const mongooseSchema = new mongoose.Schema(schema || {}, {
     timestamps: true,
     strict: true,
@@ -62,21 +70,28 @@ export async function getOrCreateProjectModel(
   const model = conn.model(modelName, mongooseSchema);
   modelCache[projectId][modelName] = model;
 
-  // Update Project document to store model schema
-  await Project.findByIdAndUpdate(
-    projectId,
-    {
-      $push: {
-        models: {
-          name: modelName,
-          schema: schema,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+  // ✅ Only update Project if the model isn’t already listed
+  const existingProject = await Project.findById(projectId);
+  const alreadyExists = existingProject?.models?.some(
+    (m: any) => m.name === modelName
+  );
+
+  if (!alreadyExists) {
+    await Project.findByIdAndUpdate(
+      projectId,
+      {
+        $push: {
+          models: {
+            name: modelName,
+            schema: schema,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
         },
       },
-    },
-    { new: true, upsert: true }
-  );
+      { new: true, upsert: true }
+    );
+  }
 
   return model;
 }
@@ -134,3 +149,72 @@ setInterval(() => {
     }
   }
 }, 60 * 1000);
+
+export function validateAgainstSchema(
+  schema: Record<string, any>,
+  data: Record<string, any>
+) {
+  const schemaFields = Object.keys(schema);
+  const dataFields = Object.keys(data);
+
+  const extraFields = dataFields.filter((f) => !schemaFields.includes(f));
+  if (extraFields.length > 0) {
+    throw new Error(`Extra fields not allowed: ${extraFields.join(", ")}`);
+  }
+
+  // 3️⃣ Required fields
+  for (const key of schemaFields) {
+    if (
+      schema[key]?.required &&
+      (data[key] === undefined || data[key] === null)
+    ) {
+      throw new Error(`Missing required field: "${key}"`);
+    }
+  }
+
+  return true;
+}
+
+export async function createDocument(
+  apiKey: string,
+  model: string,
+  data: Record<string, unknown>
+) {
+  await connectDB();
+
+  // 2️⃣ Find project
+  const project = await Project.findOne({ apiKey });
+  if (!project) throw new Error("Invalid API key or project not found");
+
+  // 3️⃣ Connect to project DB
+  let conn = getProjectConnection(project._id.toString());
+  if (!conn) {
+    conn = await connectToProjectDB(project._id.toString(), project.mongoUrl);
+  }
+
+  // 4️⃣ Get or cache model
+  if (!modelCache[project._id.toString()])
+    modelCache[project._id.toString()] = {};
+
+  let Model = modelCache[project._id.toString()][model];
+  if (!Model) {
+    const modelDoc = project.models?.find((m: any) => m.name === model);
+    if (!modelDoc) throw new Error(`Model "${model}" schema not found`);
+    if (!modelDoc.schema)
+      throw new Error(`Model "${model}" exists but has no schema defined`);
+
+    Model = await getOrCreateProjectModel(
+      project._id.toString(),
+      model,
+      modelDoc.schema
+    );
+    modelCache[project._id.toString()][model] = Model;
+  }
+
+  // 5️⃣ Validate against schema
+  validateAgainstSchema(Model.schema.obj, data);
+
+  // 6️⃣ Insert
+  const created = await Model.create(data);
+  return created;
+}

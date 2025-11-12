@@ -55,9 +55,9 @@ export default function ProjectCard({
               <CardTitle className="text-lg text-gray-900 dark:text-gray-100">
                 {project.name}
               </CardTitle>
-              <CardDescription className="text-xs text-gray-500 dark:text-gray-400">
-                Members: {project.members?.length ?? 0} • Created:{" "}
-                {formatDate(project.createdAt)}
+              <CardDescription className="text-xs text-gray-500 dark:text-gray-400 flex flex-col space-y-0.5">
+                <span>Members: {project.members?.length ?? 0}</span>
+                <span>Created: {formatDate(project.createdAt)}</span>
               </CardDescription>
             </div>
           </div>

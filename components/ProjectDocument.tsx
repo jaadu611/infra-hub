@@ -63,7 +63,7 @@ const ProjectDocument: React.FC<ProjectDocumentProps> = ({
           </Button>
         </Link>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 h-full">
         {documents?.length ? (
           <div className="flex flex-col gap-6">
             {documents.map((doc) => (
@@ -86,7 +86,7 @@ const ProjectDocument: React.FC<ProjectDocumentProps> = ({
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center p-6 bg-gray-700/30 rounded-lg text-center space-y-2">
+          <div className="flex h-full flex-col items-center justify-center p-6 bg-gray-700/30 rounded-lg text-center space-y-2">
             <FileText className="h-8 w-8 text-purple-400" />
             <p className="text-gray-200 font-medium">No documents found</p>
             <p className="text-gray-400 text-sm">

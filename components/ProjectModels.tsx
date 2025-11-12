@@ -15,6 +15,13 @@ import {
   ChevronRight,
   Sparkles,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 interface ProjectModelsProps {
   projectId: string;
@@ -37,7 +44,7 @@ const FIELD_TYPES = [
   { value: "Boolean", label: "Boolean", icon: "T/F" },
   { value: "Date", label: "Date", icon: "📅" },
   { value: "Mixed", label: "Mixed", icon: "⚡" },
-  { value: "Reference", label: "Reference", icon: "🔗" }, // new reference type
+  { value: "Reference", label: "Reference", icon: "🔗" },
 ];
 
 const ProjectModels: React.FC<ProjectModelsProps> = ({ projectId }) => {
@@ -90,19 +97,19 @@ const ProjectModels: React.FC<ProjectModelsProps> = ({ projectId }) => {
     e.preventDefault();
 
     if (!modelName.trim()) {
-      alert("Please enter a model name");
+      toast.error("Please enter a model name");
       return;
     }
     if (fields.length === 0) {
-      alert("Please add at least one field");
+      toast.error("Please add at least one field");
       return;
     }
     if (fields.some((f) => !f.name.trim())) {
-      alert("All fields must have a name");
+      toast.error("All fields must have a name");
       return;
     }
     if (fields.some((f) => f.type === "Reference" && !f.ref)) {
-      alert("Reference fields must select a model");
+      toast.error("Reference fields must select a model");
       return;
     }
 
@@ -129,7 +136,7 @@ const ProjectModels: React.FC<ProjectModelsProps> = ({ projectId }) => {
       fetchModels();
     } catch (err) {
       console.error(err);
-      alert((err as Error).message);
+      toast.error((err as Error).message);
     } finally {
       setIsSubmitting(false);
     }
@@ -138,7 +145,7 @@ const ProjectModels: React.FC<ProjectModelsProps> = ({ projectId }) => {
   return (
     <>
       {/* Main card */}
-      <Card className="dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 bg-white border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden">
+      <Card className="dark:bg-gradient-to-br gap-0 dark:from-gray-900 dark:to-gray-800 bg-white border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden">
         <CardHeader className="border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800/50 dark:to-gray-800/30 pb-6">
           <div className="flex items-center pt-6 justify-between">
             <div className="flex items-center gap-4">
@@ -187,32 +194,31 @@ const ProjectModels: React.FC<ProjectModelsProps> = ({ projectId }) => {
             </div>
           ) : models.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
-              {models.map((model) => (
-                <Link
-                  key={model._id}
-                  href={`/model/${projectId}/${model.name}`}
-                >
-                  <div className="group relative overflow-hidden p-5 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-300 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-purple-500 hover:shadow-xl cursor-pointer">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-bl-full transform translate-x-8 -translate-y-8 group-hover:scale-150 transition-transform duration-500" />
-                    <div className="relative flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="p-2.5 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-md group-hover:shadow-lg transition-shadow">
-                          <FileText className="w-5 h-5 text-white" />
+              {models.map((model, idx) => {
+                return (
+                  <Link key={idx} href={`/model/${projectId}/${model.name}`}>
+                    <div className="group relative overflow-hidden p-5 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-300 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-purple-500 hover:shadow-xl cursor-pointer">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-bl-full transform translate-x-8 -translate-y-8 group-hover:scale-150 transition-transform duration-500" />
+                      <div className="relative flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="p-2.5 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-md group-hover:shadow-lg transition-shadow">
+                            <FileText className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              {model.name}
+                            </h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                              ID: {model.name}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                            {model.name}
-                          </h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                            ID: {model._id}
-                          </p>
-                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 px-4">
@@ -331,42 +337,73 @@ const ProjectModels: React.FC<ProjectModelsProps> = ({ projectId }) => {
                                 updateField(idx, "name", e.target.value)
                               }
                               disabled={isSubmitting}
-                              className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50"
+                              className="flex-1 px-3 py-2 rounded-lg border duration-200 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50"
                             />
                             {field.type === "Reference" ? (
-                              <select
-                                value={field.ref || ""}
-                                onChange={(e) =>
-                                  updateField(idx, "ref", e.target.value)
-                                }
-                                disabled={isSubmitting || models.length === 0}
-                                className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50 min-w-[130px]"
-                              >
-                                <option value="">Select a model</option>
-                                {models.map((m) => (
-                                  <option key={m._id} value={m.name}>
-                                    {m.name}
-                                  </option>
-                                ))}
-                              </select>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="px-3 py-2 rounded-lg border transition-all duration-200 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm w-[120px] text-left focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                                    disabled={
+                                      isSubmitting || models.length === 0
+                                    }
+                                  >
+                                    {field.ref || "Select a model"}
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                  {models.map((m) => (
+                                    <DropdownMenuItem
+                                      key={m._id}
+                                      onClick={() =>
+                                        updateField(idx, "ref", m.name)
+                                      }
+                                    >
+                                      {m.name}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             ) : (
-                              <select
-                                value={field.type}
-                                onChange={(e) =>
-                                  updateField(idx, "type", e.target.value)
-                                }
-                                disabled={isSubmitting}
-                                className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-50 min-w-[130px]"
-                              >
-                                {FIELD_TYPES.filter(
-                                  (t) => t.value !== "Reference"
-                                ).map((type) => (
-                                  <option key={type.value} value={type.value}>
-                                    {type.icon} {type.label}
-                                  </option>
-                                ))}
-                                <option value="Reference">🔗 Reference</option>
-                              </select>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="px-3 py-2 rounded-lg duration-200 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm w-[120px] text-left focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50"
+                                    disabled={isSubmitting}
+                                  >
+                                    {field.type === "Reference"
+                                      ? "🔗 Reference"
+                                      : FIELD_TYPES.find(
+                                          (t) => t.value === field.type
+                                        )?.icon +
+                                        " " +
+                                        field.type}
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-[140px]">
+                                  {FIELD_TYPES.filter(
+                                    (t) => t.value !== "Reference"
+                                  ).map((type) => (
+                                    <DropdownMenuItem
+                                      key={type.value}
+                                      onClick={() =>
+                                        updateField(idx, "type", type.value)
+                                      }
+                                    >
+                                      {type.icon} {type.label}
+                                    </DropdownMenuItem>
+                                  ))}
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      updateField(idx, "type", "Reference")
+                                    }
+                                  >
+                                    🔗 Reference
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             )}
                           </div>
                         </div>

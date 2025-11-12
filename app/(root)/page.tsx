@@ -15,6 +15,7 @@ import {
   Sparkles,
   Zap,
   Target,
+  LucideIcon,
 } from "lucide-react";
 import { getUserDashboardData } from "@/lib/db";
 import Link from "next/link";
@@ -39,32 +40,29 @@ type Document = {
   projectId: string;
 };
 
-interface APIRequest {
-  _id: string;
-  endpoint: string;
-}
-
-export type ActivityType = "delete" | "join" | "invite" | "create" | "update";
+export type ActivityType =
+  | "delete"
+  | "join"
+  | "invite"
+  | "create"
+  | "update"
+  | "API request (GET)"
+  | "API request (POST)"
+  | "API request (PUT)"
+  | "API request (DELETE)";
 
 export interface Activity {
   type: ActivityType;
   action: string;
-  collection: string;
+  collectionName: string;
   time: string;
-}
-
-interface RawActivity {
-  type?: ActivityType;
-  action?: string;
-  collection?: string;
-  time?: string | Date;
 }
 
 interface DashboardData {
   user: { _id: string; name: string };
   projects: Projects[];
   documents: Document[];
-  apiRequests: APIRequest[];
+  apiRequests: number;
   recentActivity: Activity[];
 }
 
@@ -112,18 +110,20 @@ export default async function DashboardPage() {
       name: rawData.user.name ?? "User",
     },
     recentActivity: (rawData.recentActivity ?? [])
-      .sort((a, b) => +new Date(b.time ?? 0) - +new Date(a.time ?? 0))
+      .map((act) => ({
+        type: act.type ?? "create",
+        action: act.action ?? "No action",
+        collectionName: act.collectionName ?? "Unknown",
+        time: act.time
+          ? new Date(act.time).toISOString()
+          : new Date().toISOString(),
+      }))
+      .sort((a, b) => +new Date(b.time) - +new Date(a.time))
       .slice(0, 5)
-      .map(
-        (act: RawActivity): Activity => ({
-          type: act.type ?? "create",
-          action: act.action ?? "No action",
-          collection: act.collection ?? "Unknown",
-          time: act.time
-            ? new Date(act.time).toLocaleString()
-            : new Date().toLocaleString(),
-        })
-      ),
+      .map((act) => ({
+        ...act,
+        time: new Date(act.time).toLocaleString(),
+      })),
     projects: (rawData.projects ?? [])
       .sort((a, b) => +new Date(b.createdAt ?? 0) - +new Date(a.createdAt ?? 0))
       .slice(0, 5)
@@ -152,6 +152,8 @@ export default async function DashboardPage() {
   };
 
   const { user, projects, documents, apiRequests, recentActivity } = data;
+
+  console.log(recentActivity);
 
   const allMembers = projects.flatMap((p) => p.members ?? []);
   const allUserIds = allMembers.map((m) => m._id).filter(Boolean);
@@ -188,7 +190,7 @@ export default async function DashboardPage() {
     },
     {
       title: "API Requests",
-      value: apiRequests.length.toString(),
+      value: apiRequests.toString(),
       icon: ActivityIcon,
       description: "Total requests",
       gradient: "from-cyan-500 to-blue-600",
@@ -270,10 +272,15 @@ export default async function DashboardPage() {
                   Latest updates from your workspace
                 </p>
               </div>
+
               {recentActivity.length > 0 && (
-                <span className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-semibold">
-                  {recentActivity.length} recent
-                </span>
+                <Link
+                  href="/recent-activities"
+                  className="text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1"
+                >
+                  View all
+                  <ArrowUpRight className="w-4 h-4" />
+                </Link>
               )}
             </div>
           </div>
@@ -295,36 +302,60 @@ export default async function DashboardPage() {
             ) : (
               <div className="space-y-3">
                 {recentActivity.map((activity, index) => {
-                  const activityConfig = {
+                  const activityConfig: Record<
+                    ActivityType,
+                    { icon: LucideIcon; color: string; label: string }
+                  > = {
                     create: {
                       icon: Plus,
-                      color: "bg-green-500",
+                      color: "bg-emerald-500",
                       label: "Created",
                     },
                     update: {
                       icon: Edit,
-                      color: "bg-blue-500",
+                      color: "bg-sky-500",
                       label: "Updated",
                     },
                     delete: {
                       icon: Trash2,
-                      color: "bg-red-500",
+                      color: "bg-rose-600",
                       label: "Deleted",
                     },
                     join: {
                       icon: UsersIcon,
-                      color: "bg-purple-500",
-                      label: "Joined",
+                      color: "bg-violet-500",
+                      label: "Joined Team",
                     },
                     invite: {
                       icon: Mail,
                       color: "bg-indigo-500",
-                      label: "Invited",
+                      label: "Sent Invite",
+                    },
+                    "API request (GET)": {
+                      icon: Database,
+                      color: "bg-teal-500",
+                      label: "GET Request",
+                    },
+                    "API request (POST)": {
+                      icon: FileText,
+                      color: "bg-blue-600",
+                      label: "POST Request",
+                    },
+                    "API request (PUT)": {
+                      icon: Edit,
+                      color: "bg-yellow-500",
+                      label: "PUT Request",
+                    },
+                    "API request (DELETE)": {
+                      icon: Trash2,
+                      color: "bg-red-600",
+                      label: "DELETE Request",
                     },
                   };
 
                   const config =
-                    activityConfig[activity.type] || activityConfig.create;
+                    activityConfig[activity.type as ActivityType] ||
+                    activityConfig.create;
                   const Icon = config.icon;
 
                   return (
@@ -340,11 +371,11 @@ export default async function DashboardPage() {
 
                       <div className="flex-1 min-w-0 space-y-1">
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {activity.action}
+                          {config.label}: {activity.action}
                         </p>
                         <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                           <span className="px-2 py-0.5 rounded-md bg-gray-200 dark:bg-gray-700 font-medium">
-                            {activity.collection}
+                            {activity.collectionName}
                           </span>
                           <span>•</span>
                           <span>{user.name}</span>
@@ -403,13 +434,6 @@ export default async function DashboardPage() {
                   Create your first project to get started with organizing your
                   work.
                 </p>
-                <Link
-                  href="/new-project"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all shadow-md hover:shadow-lg"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create Project
-                </Link>
               </div>
             ) : (
               <div className="space-y-3">

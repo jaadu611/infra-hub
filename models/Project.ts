@@ -16,17 +16,14 @@ const pendingInviteSchema = new Schema(
 );
 
 // Schema for storing dynamic project models
-const projectModelSchema = new Schema(
-  {
-    name: { type: String, required: true },
-    schema: { type: Schema.Types.Mixed, required: true },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
-  },
-  { _id: false }
-);
+const projectModelSchema = new Schema({
+  name: { type: String, required: true },
+  schema: { type: Schema.Types.Mixed, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
 
-// Main Project schema
+// ✅ Main Project schema
 const projectSchema = new Schema(
   {
     name: { type: String, required: true },
@@ -43,7 +40,6 @@ const projectSchema = new Schema(
     ],
 
     invitedEmails: { type: [String], default: [] },
-
     pendingInvites: { type: [pendingInviteSchema], default: [] },
 
     apiKey: { type: String, required: true, unique: true },
@@ -51,9 +47,9 @@ const projectSchema = new Schema(
     authSecret: { type: String, required: true },
 
     documents: [{ type: Schema.Types.ObjectId, ref: "Document" }],
-
-    // NEW: Save project models with their schema
     models: { type: [projectModelSchema], default: [] },
+
+    apiRequests: { type: Number, default: 0, required: true },
   },
   { timestamps: true }
 );

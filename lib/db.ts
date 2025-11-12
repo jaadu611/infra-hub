@@ -5,6 +5,7 @@ import Project from "@/models/Project";
 import DocumentModel from "@/models/Docs";
 import Activity from "@/models/Activity";
 import { Types } from "mongoose";
+import APIRequest from "@/models/APIRequest";
 
 // ------------------ Types ------------------
 
@@ -28,6 +29,7 @@ export interface Document {
 }
 
 export interface ProjectDoc {
+  apiRequests: number;
   _id: string;
   name: string;
   members?: Member[];
@@ -41,9 +43,18 @@ export interface APIRequest {
 }
 
 export interface Activity {
-  type: "delete" | "join" | "invite" | "create" | "update";
+  collectionName: string;
+  type:
+    | "delete"
+    | "join"
+    | "invite"
+    | "create"
+    | "update"
+    | "API request (GET)"
+    | "API request (POST)"
+    | "API request (PUT)"
+    | "API request (DELETE)";
   action: string;
-  collection: string;
   time: string;
 }
 
@@ -63,8 +74,9 @@ export interface DashboardData {
   user: { _id: string; name: string };
   projects: ProjectDoc[];
   documents: Document[];
-  apiRequests: APIRequest[];
+  apiRequests: number;
   recentActivity: Activity[];
+  uniqueMembers: unknown;
 }
 
 export interface CreateProjectData {
@@ -97,6 +109,7 @@ interface PopulatedDocument {
 }
 
 export interface ProjectType {
+  apiRequests: number;
   pendingInvites: string[];
   _id: string;
   name: string;
@@ -106,7 +119,6 @@ export interface ProjectType {
   authSecret: string;
   mongoUrl: string;
   documents?: Document[];
-  activities?: Activity[];
   createdAt: string;
   updatedAt: string;
 }
@@ -135,41 +147,103 @@ export async function getUserDashboardData(
 ): Promise<DashboardData | null> {
   await connectDB();
 
-  const userDoc = await User.findOne({ email })
+  console.log("🔍 Fetching dashboard data for:", email);
+
+  const userDoc = (await User.findOne({ email })
     .populate({
       path: "projects",
       populate: [
-        { path: "members", select: "name email role user" },
+        { path: "members.user", select: "name email role" },
         { path: "documents", select: "name content owner createdAt" },
       ],
     })
-    .lean<UserType>();
+    .lean()) as UserType | null;
 
-  if (!userDoc) return null;
+  if (!userDoc) {
+    console.log("⚠️ No user found");
+    return null;
+  }
 
-  const projects: ProjectDoc[] = (userDoc.projects ?? []).map((p) => ({
+  // --- 🧩 Projects
+  const projects = (userDoc.projects ?? []).map((p: ProjectType) => ({
     _id: p._id.toString(),
     name: p.name,
     createdAt: p.createdAt?.toString() ?? new Date().toISOString(),
-    members: p.members?.map((m) => ({
+    members: p.members?.map((m: Member) => ({
       _id: m._id.toString(),
       name: m.name,
       email: m.email,
-      role: m.role,
+      role: m.role ?? "viewer",
       user: m.user ? { _id: m.user._id, name: m.user.name } : undefined,
     })),
-    documents: p.documents?.map((d) => ({
+    documents: p.documents?.map((d: Document) => ({
       _id: d._id.toString(),
       title: d.name ?? "Untitled",
       content: d.content ?? "",
-      addedBy: typeof d.owner === "string" ? d.owner : d.owner?._id,
+      addedBy:
+        typeof d.owner === "string"
+          ? d.owner
+          : (d.owner as { _id: string })?._id,
       createdAt: d.createdAt?.toString(),
       projectId: p._id.toString(),
     })),
+    apiRequests: p.apiRequests ?? 0,
   }));
 
-  const documents: Document[] = projects.flatMap((p) => p.documents ?? []);
+  // ✅ Create a unique set of members across all projects
+  const allMembers = projects.flatMap((p) => p.members ?? []);
+  const uniqueMembersMap = new Map<string, Member>();
+  for (const member of allMembers) {
+    const key = member.email ?? member._id; // prioritize email for uniqueness
+    if (!uniqueMembersMap.has(key)) {
+      uniqueMembersMap.set(key, member);
+    }
+  }
+  const uniqueMembers = Array.from(uniqueMembersMap.values());
 
+  // --- ⚙️ Fetch API Request Logs (✅ successful only, for today)
+  const projectIds = projects.map((p) => p._id);
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0); // midnight UTC
+
+  const apiRequests = await APIRequest.find({
+    project: { $in: projectIds },
+    status: "success",
+    createdAt: { $gte: startOfDay },
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  // --- 📈 Aggregate API Request Stats
+  const apiStatsByProject = projects.map((project) => {
+    const requests = apiRequests.filter(
+      (r) => r.project.toString() === project._id
+    );
+
+    const total = requests.length;
+
+    // Aggregate hourly counts for the current day
+    const hourlyCounts: Record<string, number> = {};
+    for (const req of requests) {
+      const hour = new Date(req.createdAt).toISOString().substring(11, 13); // "HH"
+      hourlyCounts[hour] = (hourlyCounts[hour] || 0) + 1;
+    }
+
+    return {
+      projectId: project._id,
+      projectName: project.name,
+      totalRequests: total,
+      dailyCounts: hourlyCounts,
+      recentRequests: requests.map((r) => ({
+        endpoint: r.endpoint,
+        method: r.method,
+        createdAt: r.createdAt?.toISOString(),
+        responseTimeMs: r.responseTimeMs ?? null,
+      })),
+    };
+  });
+
+  // --- 🧾 Recent Activity
   const recentActivityDocs = await Activity.find({
     user: userDoc._id,
   })
@@ -177,24 +251,34 @@ export async function getUserDashboardData(
     .limit(5)
     .lean();
 
-  const recentActivity: Activity[] = recentActivityDocs.map((act) => ({
+  const recentActivity = recentActivityDocs.map((act) => ({
     type: act.type,
     action: act.action,
-    collection: act.collectionName,
-    time: act.createdAt?.toISOString() ?? new Date().toISOString(),
+    collectionName: act.collectionName,
+    time: act.createdAt?.toString() ?? new Date().toISOString(),
   }));
+
+  // --- 🔢 Total successful API requests (today)
+  const totalApiRequests = apiStatsByProject.reduce(
+    (sum, p) => sum + (p.totalRequests ?? 0),
+    0
+  );
+
+  console.log("📊 API Stats per project:", apiStatsByProject);
+  console.log("👥 Unique members:", uniqueMembers.length);
 
   return {
     user: { _id: userDoc._id.toString(), name: userDoc.name },
     projects,
-    documents,
-    apiRequests: userDoc.apiRequests ?? [],
+    documents: projects.flatMap((p) => p.documents ?? []),
+    apiRequests: totalApiRequests,
     recentActivity,
+    uniqueMembers,
   };
 }
 
 // Delete project
-export async function deleteProject(projectId: string) {
+export async function deleteProject(projectId: string, userId: string) {
   await connectDB();
 
   const deletedProject = await Project.findByIdAndDelete(projectId);
@@ -205,6 +289,13 @@ export async function deleteProject(projectId: string) {
     { $pull: { projects: projectId } }
   );
 
+  await Activity.create({
+    user: userId,
+    action: `Deleted project "${deletedProject.name}"`,
+    collectionName: "Projects",
+    type: "delete",
+  });
+
   return { success: true };
 }
 
@@ -212,12 +303,25 @@ export async function deleteProject(projectId: string) {
 export async function deleteProjectDocuments(projectId: string) {
   await connectDB();
 
-  const project = await Project.findById(projectId).select("documents");
+  const project = await Project.findById(projectId)
+    .select("documents members")
+    .populate("members.user", "_id");
+
   if (!project) throw new Error("Project not found");
 
   const result = await DocumentModel.deleteMany({
     _id: { $in: project.documents },
   });
+
+  const userId = project.members?.[0]?.user?._id;
+  if (userId) {
+    await Activity.create({
+      user: userId,
+      action: `Deleted ${result.deletedCount} document(s)`,
+      collectionName: "Document",
+      type: "delete",
+    });
+  }
 
   return { success: true, deletedCount: result.deletedCount };
 }
@@ -235,7 +339,7 @@ export async function createProjectServer(data: CreateProjectData) {
     name: projectName,
     members: [{ user: user._id, role: "admin" }],
     invitedEmails: [],
-    mongoUrl: mongoUrl ?? "no-url",
+    mongoUrl: mongoUrl,
     authSecret: authJsSecret ?? crypto.randomBytes(16).toString("hex"),
     apiKey: crypto.randomBytes(16).toString("hex"),
     documents: [],
@@ -252,6 +356,7 @@ export async function createProjectServer(data: CreateProjectData) {
     minute: "2-digit",
     hour12: true,
   });
+
   const readmeContent = `# 🌟 Welcome to **${projectName}**
 
 ${
@@ -301,6 +406,24 @@ You can use this README to outline your goals, architecture, or roadmap.
 
   user.projects.push(project._id);
   await user.save();
+
+  // 🧾 Record an activity for project creation
+  await Activity.create({
+    user: user._id,
+    action: `Created project "${projectName}"`,
+    collectionName: "Projects",
+    type: "create",
+    time: new Date(),
+  });
+
+  // 🧾 Record an activity for the initial README document creation
+  await Activity.create({
+    user: user._id,
+    action: `Created initial README for "${projectName}"`,
+    collectionName: "Documents",
+    type: "create",
+    time: new Date(),
+  });
 
   return {
     _id: project._id.toString(),
@@ -413,6 +536,7 @@ export async function getDocumentDetails(id: string) {
 
   const document = (await DocumentModel.findById(id)
     .populate("owner", "name email")
+    .populate("project", "_id name")
     .lean()) as PopulatedDocument | null;
 
   if (!document) return null;
@@ -424,7 +548,6 @@ export async function getDocumentDetails(id: string) {
     createdAt: document.createdAt
       ? new Date(document.createdAt).toISOString()
       : new Date().toISOString(),
-
     updatedAt: document.updatedAt
       ? new Date(document.updatedAt).toISOString()
       : new Date().toISOString(),
@@ -436,5 +559,14 @@ export async function getDocumentDetails(id: string) {
             email: document.owner.email,
           }
         : { _id: String(document.owner) },
+    project:
+      typeof document.project === "object" && document.project !== null
+        ? {
+            _id: document.project._id.toString(),
+            name: document.project.name,
+          }
+        : document.project
+        ? { _id: String(document.project) }
+        : null,
   };
 }

@@ -99,7 +99,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="p-6 h-[80vh] transition-colors duration-0 text-gray-900 dark:text-white bg-background/90">
+    <div className="transition-colors h-full duration-0 text-gray-900 dark:text-white bg-background/90">
       {projects.length > 0 ? (
         <>
           {/* Search and Header */}
@@ -137,7 +137,7 @@ export default function ProjectsPage() {
         </>
       ) : (
         /* Empty State */
-        <div className="flex flex-col items-center justify-center min-h-[80vh] text-center py-24 rounded-2xl shadow-md bg-white dark:bg-gray-900 transition-colors">
+        <div className="flex flex-col items-center justify-center h-full text-center py-24 rounded-2xl shadow-md bg-white dark:bg-gray-900 transition-colors">
           <FolderPlus className="w-12 h-12 text-indigo-500 dark:text-indigo-400 mb-4" />
           <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
             No projects yet

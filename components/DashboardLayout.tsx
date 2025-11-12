@@ -3,7 +3,15 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Bell, User, Folder, Home, LogOut } from "lucide-react";
+import {
+  Bell,
+  User,
+  Folder,
+  Home,
+  LogOut,
+  Zap,
+  GitPullRequestIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AppSheetMenu } from "./AppSidebar";
@@ -17,6 +25,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const mainItems = [
     { title: "Home", url: "/", icon: Home },
     { title: "Projects", url: "/projects", icon: Folder },
+    { title: "API Requests", url: "/api-requests", icon: GitPullRequestIcon },
+    { title: "Recent Activities", url: "/recent-activities", icon: Zap },
     { title: "Profile", url: "/profile", icon: User },
   ];
 

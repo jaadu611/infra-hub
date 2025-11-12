@@ -96,8 +96,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             color: "green",
           },
           {
-            label: "Activities",
-            value: project.activities?.length ?? 0,
+            label: "API Requests",
+            value: project.apiRequests ?? 0,
             icon: Activity,
             color: "purple",
           },
@@ -122,7 +122,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 </p>
               </div>
               <div
-                className={`p-3 rounded-full bg-${stat.color}-100 dark:bg-${stat.color}-900/20`}
+                className={`p-3 rounded-full bg-${stat.color}-100 dark:bg-${stat.color}-900/30`}
               >
                 <stat.icon
                   className={`h-5 w-5 text-${stat.color}-600 dark:text-${stat.color}-300`}

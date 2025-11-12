@@ -7,8 +7,6 @@ import {
 import Project from "@/models/Project";
 import { connectDB } from "@/lib/mongodb";
 
-type ModelDoc = { _id: { toString(): string } | string; name: string };
-
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -19,18 +17,24 @@ export async function GET(
   if (!projectId)
     return NextResponse.json({ error: "Missing projectId" }, { status: 400 });
 
-  const project = await Project.findById(projectId);
+  const project = await Project.findById(projectId).lean();
   if (!project)
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
   try {
-    await connectToProjectDB(projectId, project.mongoUrl);
+    type ModelEntry = {
+      name: string;
+      schema: object;
+      createdAt?: Date | string;
+      updatedAt?: Date | string;
+    };
+    const projectObj = project as unknown as { models?: ModelEntry[] };
 
-    const modelDocs = await getProjectModelNames(projectId);
-
-    const models = modelDocs.map((m: ModelDoc) => ({
-      _id: typeof m._id === "string" ? m._id : m._id.toString(),
+    const models = (projectObj.models || []).map((m) => ({
       name: m.name,
+      schema: m.schema,
+      createdAt: m.createdAt,
+      updatedAt: m.updatedAt,
     }));
 
     return NextResponse.json({ models });

@@ -21,7 +21,7 @@ interface NewProjectModalProps {
     projectName: string;
     description: string;
     email: string;
-    mongoUrl?: string;
+    mongoUrl: string;
     authJsSecret?: string;
   }) => void;
 }
@@ -59,8 +59,13 @@ export default function NewProjectModal({
     }
 
     if (step === 2) {
-      if (!email) {
+      if (!email?.trim()) {
         toast.error("Please enter your email");
+        return;
+      }
+
+      if (!mongoUrl.trim()) {
+        toast.error("MongoDB URL is required");
         return;
       }
 
@@ -70,17 +75,17 @@ export default function NewProjectModal({
         onFinish({
           projectName,
           description: description.trim(),
-          email,
-          mongoUrl: mongoUrl || undefined,
-          authJsSecret: authJsSecret || undefined,
+          email: email.trim(),
+          mongoUrl: mongoUrl.trim(),
+          authJsSecret: authJsSecret?.trim() || undefined,
         });
 
-        onClose();
         setStep(1);
         setProjectName("");
         setDescription("");
         setMongoUrl("");
         setAuthJsSecret("");
+        onClose();
       } catch (err) {
         console.error("Error creating project:", err);
         toast.error(
@@ -106,7 +111,9 @@ export default function NewProjectModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {step === 1 ? "Create New Project" : "MongoDB Setup (Optional)"}
+            {step === 1
+              ? "Create New Project"
+              : "MongoDB and Auth Setup (Optional)"}
           </DialogTitle>
         </DialogHeader>
 
@@ -140,7 +147,7 @@ export default function NewProjectModal({
 
               <div className="flex flex-col mt-2">
                 <label className="text-sm font-medium mb-1">
-                  MongoDB Email
+                  Email Address
                 </label>
                 <Input
                   value={email}
@@ -148,10 +155,6 @@ export default function NewProjectModal({
                   placeholder="user@example.com"
                   disabled={isLoading}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  This is the email associated with your MongoDB account. You
-                  can change it if needed.
-                </p>
               </div>
             </>
           )}
@@ -159,9 +162,7 @@ export default function NewProjectModal({
           {step === 2 && (
             <>
               <div className="flex flex-col">
-                <label className="text-sm font-medium mb-1">
-                  MongoDB URL (Optional)
-                </label>
+                <label className="text-sm font-medium mb-1">MongoDB URL</label>
                 <Input
                   placeholder="mongodb+srv://..."
                   value={mongoUrl}
@@ -211,7 +212,11 @@ export default function NewProjectModal({
 
           <Button
             onClick={handleNext}
-            disabled={(step === 1 && !projectName) || isLoading}
+            disabled={
+              isLoading ||
+              (step === 1 && !projectName.trim()) ||
+              (step === 2 && (!mongoUrl.trim() || !email))
+            }
           >
             {isLoading ? "Creating..." : step === 1 ? "Next" : "Finish"}
           </Button>
