@@ -343,6 +343,9 @@ export default async function ApiRequestsPage({
                         />
                       </div>
                     </div>
+                    <p className={`text-lg font-semibold line-clamp-1`}>
+                      All Projects
+                    </p>
                     <div>
                       <p
                         className={`text-2xl font-bold ${
