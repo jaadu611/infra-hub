@@ -1,0 +1,13 @@
+# render.yaml
+services:
+  - type: web
+    name: infra-hub-frontend
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
