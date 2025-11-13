@@ -7,16 +7,6 @@ export default function Loading() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="p-4 md:p-8 space-y-8 animate-fade-in">
-        {/* Header Skeleton */}
-        <div className="text-center md:text-left space-y-4">
-          <Skeleton className="h-10 w-64 rounded-md mx-auto md:mx-0" />
-          <Skeleton className="h-5 w-80 rounded-md mx-auto md:mx-0" />
-          <div className="flex justify-center md:justify-start gap-2 mt-4 flex-wrap">
-            <Skeleton className="h-6 w-32 rounded-md" />
-            <Skeleton className="h-6 w-28 rounded-md" />
-          </div>
-        </div>
-
         {/* Profile Card Skeleton */}
         <Card className="shadow-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
           <CardHeader className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 p-6 rounded-t-lg">

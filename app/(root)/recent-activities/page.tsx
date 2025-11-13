@@ -129,9 +129,6 @@ export default async function RecentActivitiesPage() {
             <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
               <ActivityIcon className="w-12 h-12 text-white" />
             </div>
-            <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-blue-100 dark:bg-blue-950/30 rounded-full flex items-center justify-center">
-              <Zap className="w-6 h-6 text-blue-600 dark:text-blue-500" />
-            </div>
           </div>
           <div className="space-y-2">
             <h2 className="text-3xl font-bold">No Activity Yet</h2>
