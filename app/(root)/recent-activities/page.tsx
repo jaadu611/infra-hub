@@ -115,15 +115,16 @@ export default async function RecentActivitiesPage() {
     );
   }
 
-  const activities = await Activity.find()
+  const activities = await Activity.find({})
     .sort({ createdAt: -1 })
     .limit(100)
     .populate("user", "email name")
-    .lean<ActivityItem[]>();
+    .lean<ActivityItem[]>()
+    .then((res) => res.filter((a) => a.user?.email === session.user!.email));
 
   if (!activities.length) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <div className="text-center space-y-6 px-4">
           <div className="relative">
             <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center mx-auto shadow-lg">

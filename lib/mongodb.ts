@@ -7,7 +7,9 @@ if (!MONGODB_URI) {
 }
 
 declare global {
-  var mongoose: { conn: Mongoose | null };
+  var mongoose: {
+    conn: Mongoose | null;
+  };
 }
 
 const cached = global.mongoose || { conn: null };
