@@ -71,6 +71,7 @@ const LandingPage = () => {
                   alt="preview"
                   height={800}
                   width={1200}
+                  loading="lazy"
                 />
               </div>
             </div>
