@@ -18,11 +18,13 @@ export interface Document {
 interface ProjectDocumentProps {
   documents: Document[];
   projectId: string;
+  userRole: "admin" | "editor" | "viewer";
 }
 
 const ProjectDocument: React.FC<ProjectDocumentProps> = ({
   documents,
   projectId,
+  userRole,
 }) => {
   const formatDate = (date: string | Date) => {
     const d = typeof date === "string" ? new Date(date) : date;
@@ -56,12 +58,14 @@ const ProjectDocument: React.FC<ProjectDocumentProps> = ({
           </CardTitle>
         </div>
 
-        <Link href={`/new-document/${projectId}`}>
-          <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white">
-            <Plus />
-            Add New Document
-          </Button>
-        </Link>
+        {userRole !== "viewer" && (
+          <Link href={`/new-document/${projectId}`}>
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white">
+              <Plus />
+              Add New Document
+            </Button>
+          </Link>
+        )}
       </CardHeader>
       <CardContent className="space-y-4 h-full">
         {documents?.length ? (

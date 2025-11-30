@@ -36,7 +36,7 @@ export default async function ApiRequestsPage({
   const session = await auth();
 
   if (!session?.user?.email) {
-    redirect("/login");
+    redirect("/");
   }
 
   await connectDB();
@@ -45,7 +45,7 @@ export default async function ApiRequestsPage({
   const user = await User.findOne({ email: session.user.email });
 
   if (!user?._id) {
-    redirect("/login");
+    redirect("/");
   }
 
   // 2. All requests for this user

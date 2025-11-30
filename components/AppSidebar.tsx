@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 const mainItems = [
-  { title: "Home", url: "/", icon: Home },
+  { title: "Home", url: "/dashboard", icon: Home },
   { title: "Projects", url: "/projects", icon: Folder },
   { title: "Profile", url: "/profile", icon: User },
 ];

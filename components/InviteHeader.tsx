@@ -28,6 +28,7 @@ interface User {
   _id: string;
   name: string;
   email: string;
+  role: "admin" | "editor" | "viewer";
 }
 
 interface InviteHeaderProps {
@@ -36,6 +37,7 @@ interface InviteHeaderProps {
   existingMembersEmails?: string[];
   invitedEmails?: string[];
   currentUserEmail?: string;
+  userRole: "admin" | "editor" | "viewer";
 }
 
 const roleConfig = {
@@ -44,6 +46,7 @@ const roleConfig = {
     icon: Edit3,
     description: "Can edit and manage content",
     color: "from-emerald-500 to-teal-500",
+    allowedRoles: ["admin"],
     textColor: "text-emerald-600 dark:text-emerald-400",
     bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
     borderColor: "border-emerald-200 dark:border-emerald-800",
@@ -51,6 +54,7 @@ const roleConfig = {
   viewer: {
     label: "Viewer",
     icon: Eye,
+    allowedRoles: ["admin", "editor"],
     description: "Read-only access",
     color: "from-gray-500 to-slate-500",
     textColor: "text-gray-600 dark:text-gray-400",
@@ -65,6 +69,7 @@ export const InviteHeader: React.FC<InviteHeaderProps> = ({
   existingMembersEmails = [],
   invitedEmails = [],
   currentUserEmail,
+  userRole,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -175,8 +180,15 @@ export const InviteHeader: React.FC<InviteHeaderProps> = ({
           </div>
         </div>
         <Button
-          onClick={() => setIsOpen(true)}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 group"
+          onClick={() =>
+            (userRole === "editor" || userRole === "admin") && setIsOpen(true)
+          }
+          className={`bg-gradient-to-r ${
+            !(userRole === "editor" || userRole === "admin")
+              ? "opacity-50 bg-gray-400 cursor-not-allowed"
+              : ""
+          } from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 group`}
+          disabled={!(userRole === "editor" || userRole === "admin")}
         >
           <UserPlus className="h-4 w-4 group-hover:scale-110 transition-transform" />
           Invite Member
@@ -261,21 +273,31 @@ export const InviteHeader: React.FC<InviteHeaderProps> = ({
                   >
                     {Object.entries(roleConfig).map(([role, conf]) => {
                       const Icon = conf.icon;
+
+                      const isAllowed = conf.allowedRoles.includes(
+                        userRole || "viewer"
+                      );
+
+                      if (!isAllowed) return null;
+
                       return (
                         <DropdownMenuItem
                           key={role}
-                          onSelect={() =>
-                            setSelectedRole(role as "editor" | "viewer")
-                          }
+                          onSelect={() => {
+                            if (isAllowed)
+                              setSelectedRole(role as "editor" | "viewer");
+                          }}
                           className={`rounded-lg p-3 cursor-pointer transition-all duration-200 ${
                             selectedRole === role
                               ? `${conf.bgColor} ${conf.borderColor} border-2`
                               : "hover:bg-gray-50 dark:hover:bg-gray-700"
+                          } ${
+                            !isAllowed ? "opacity-50 cursor-not-allowed" : ""
                           }`}
                         >
                           <div
                             className={`flex items-center w-full ${
-                              selectedRole === role && "justify-between"
+                              selectedRole === role ? "justify-between" : ""
                             } gap-3`}
                           >
                             <div

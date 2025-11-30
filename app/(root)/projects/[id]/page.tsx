@@ -17,6 +17,7 @@ import TeamManagement from "@/components/TeamManagement";
 import { auth } from "@/auth";
 import ProjectDocument from "@/components/ProjectDocument";
 import ProjectModels from "@/components/ProjectModels";
+import Link from "next/link";
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -24,26 +25,79 @@ interface ProjectPageProps {
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
-  const project: ProjectType | null = await getProjectById(id);
-  const session = await auth();
+  const isValidObjectId = id && /^[0-9a-fA-F]{24}$/.test(id);
 
-  if (!project) {
+  if (!isValidObjectId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="p-6 rounded-full bg-red-200 dark:bg-red-800 mx-auto w-fit">
-            <Database className="h-12 w-12 text-red-600 dark:text-red-300" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Project Not Found
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400">
-            The project you’re looking for doesn’t exist or has been removed.
-          </p>
+      <div className="bg-white flex flex-col items-center justify-center dark:bg-gray-900 border h-full border-gray-200 w-full dark:border-gray-700 shadow-md rounded-xl p-10 text-center space-y-4">
+        <div className="p-4 rounded-full bg-red-100 dark:bg-red-900/30 w-fit mx-auto">
+          <Database className="h-10 w-10 text-red-600 dark:text-red-300" />
         </div>
+
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Project Not Found
+        </h1>
+
+        <p className="text-gray-500 dark:text-gray-400">
+          The project you’re trying to access does not exist or may have been
+          removed.
+        </p>
+
+        <Link href="/dashboard">
+          <Button variant="outline" className="mt-4">
+            Go Back to dashboard
+          </Button>
+        </Link>
       </div>
     );
   }
+
+  const project: ProjectType = await getProjectById(id);
+
+  if (!project) {
+    return (
+      <div className="bg-white flex flex-col items-center justify-center dark:bg-gray-900 border h-full border-gray-200 w-full dark:border-gray-700 shadow-md rounded-xl p-10 text-center space-y-4">
+        <div className="p-4 rounded-full bg-yellow-100 dark:bg-yellow-900/30 w-fit mx-auto">
+          <Database className="h-10 w-10 text-yellow-600 dark:text-yellow-300" />
+        </div>
+
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Access Denied
+        </h1>
+
+        <p className="text-gray-500 dark:text-gray-400">
+          You don’t have permission to view this project. If you believe this is
+          a mistake, please contact the project owner.
+        </p>
+
+        <Link href="/dashboard">
+          <Button variant="outline" className="mt-4">
+            Go Back to Dashboard
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const session = await auth();
+
+  const emails = project.members
+    ?.map((m) => m?.user?.email)
+    .filter((email) => email !== undefined);
+
+  if (!emails?.includes(session?.user?.email ?? "")) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <h1 className="text-2xl font-bold">
+          You do not have access to this project.
+        </h1>
+      </div>
+    );
+  }
+
+  const userRole = project.members?.find(
+    (m) => m?.user?.email === session?.user?.email
+  )?.role;
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString(undefined, {
@@ -135,19 +189,26 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
       {/* Main Content */}
       <main className="mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <DatabaseConfig mongoUrl={project.mongoUrl} projectId={id} />
+        <DatabaseConfig
+          mongoUrl={project.mongoUrl}
+          projectId={id}
+          userRole={userRole as "admin" | "editor" | "viewer"}
+        />
         <SecurityAndAuth
           apiKey={project.apiKey}
           authSecret={project.authSecret}
+          userRole={userRole as "admin" | "editor" | "viewer"}
         />
         <TeamManagement
           members={project.members ?? []}
           invitedEmails={project.pendingInvites ?? []}
           projectId={id}
           currentUserEmail={session?.user?.id}
+          userRole={userRole as "admin" | "editor" | "viewer"}
         />
         <ProjectDocument
           projectId={project._id.toString()}
+          userRole={userRole as "admin" | "editor" | "viewer"}
           documents={project.documents!.map((doc) => ({
             id: doc._id.toString(),
             name: doc.name ?? "Untitled",
@@ -157,7 +218,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               : undefined,
           }))}
         />
-        <ProjectModels projectId={project._id.toString()} />
+        <ProjectModels
+          projectId={project._id.toString()}
+          userRole={userRole as "admin" | "editor" | "viewer"}
+        />
       </main>
     </div>
   );

@@ -19,7 +19,7 @@ export default async function Layout({
     : null;
 
   if (!user) {
-    return redirect("/signup");
+    return redirect("/");
   }
   return (
     <main>

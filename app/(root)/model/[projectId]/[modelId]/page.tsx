@@ -134,7 +134,7 @@ export default async function ModelPage({ params }: PageProps) {
               The project you&apos;re looking for doesn&apos;t exist or has been
               removed.
             </p>
-            <Link href="/">
+            <Link href="/dashboard">
               <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard

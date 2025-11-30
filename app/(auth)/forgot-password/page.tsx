@@ -145,7 +145,7 @@ const ForgotPasswordPage = () => {
         throw new Error(result?.error || "Login failed");
       }
 
-      router.push("/");
+      router.push("/dashboard");
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : "Password reset failed");

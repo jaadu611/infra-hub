@@ -1,5 +1,5 @@
 import { Separator } from "@radix-ui/react-separator";
-import { Mail, Crown, Edit3, Eye, Clock, Shield, UserX } from "lucide-react";
+import { Mail, Crown, Edit3, Eye, Clock, UserX } from "lucide-react";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { InviteHeader } from "./InviteHeader";
@@ -19,6 +19,7 @@ interface TeamManagementProps {
   invitedEmails: string[];
   projectId: string;
   currentUserEmail?: string;
+  userRole: "admin" | "editor" | "viewer";
 }
 
 const roleConfig = {
@@ -59,6 +60,7 @@ export default function TeamManagement({
   invitedEmails,
   projectId,
   currentUserEmail,
+  userRole,
 }: TeamManagementProps) {
   const sortedMembers = [...members].sort((a, b) => {
     const rolePriority = { admin: 0, editor: 1, viewer: 2 };
@@ -95,6 +97,7 @@ export default function TeamManagement({
           existingMembersEmails={members.map((m) => m.user?.email ?? "")}
           invitedEmails={invitedEmails}
           title="Team Management"
+          userRole={userRole as "admin" | "editor" | "viewer"}
         />
 
         <div className="grid grid-cols-3 gap-3">
@@ -281,30 +284,6 @@ export default function TeamManagement({
             </div>
           </>
         )}
-
-        {/* Info Box */}
-        <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 rounded-xl">
-          <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-              Role Permissions
-            </p>
-            <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-              <li className="flex items-center gap-2">
-                <Crown className="w-3 h-3" />
-                <strong>Admins</strong> can manage all aspects of the project
-              </li>
-              <li className="flex items-center gap-2">
-                <Edit3 className="w-3 h-3" />
-                <strong>Editors</strong> can create and modify content
-              </li>
-              <li className="flex items-center gap-2">
-                <Eye className="w-3 h-3" />
-                <strong>Viewers</strong> have read-only access
-              </li>
-            </ul>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

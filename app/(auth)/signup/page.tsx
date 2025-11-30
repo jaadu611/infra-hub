@@ -22,19 +22,11 @@ const SignupPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match", {
-        description: "Please make sure both passwords are the same.",
-      });
-      return;
-    }
 
     setLoading(true);
 
@@ -65,7 +57,7 @@ const SignupPage = () => {
         toast.error("Login failed", { description: result.error });
       } else {
         toast.success("Welcome Abroad!");
-        router.push("/");
+        router.push("/dashboard");
       }
     } catch (err) {
       console.error("Signup error:", err);
@@ -142,24 +134,6 @@ const SignupPage = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-gray-300">
-                Confirm Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="pl-10 bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-500"
                   required
                 />

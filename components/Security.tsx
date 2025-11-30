@@ -21,11 +21,13 @@ interface SecurityAndAuthProps {
   apiKey: string;
   authSecret: string;
   projectId?: string;
+  userRole: "admin" | "editor" | "viewer";
 }
 
 const SecurityAndAuth: React.FC<SecurityAndAuthProps> = ({
   apiKey,
   authSecret,
+  userRole,
 }) => {
   const [copiedField, setCopiedField] = useState<
     "apiKey" | "authSecret" | null
@@ -58,7 +60,6 @@ const SecurityAndAuth: React.FC<SecurityAndAuthProps> = ({
     return { label: "Weak", color: "text-red-500", bg: "bg-red-500" };
   };
 
-  const apiKeyStrength = getStrength(apiKey);
   const authSecretStrength = getStrength(authSecret);
 
   return (
@@ -111,32 +112,6 @@ const SecurityAndAuth: React.FC<SecurityAndAuthProps> = ({
                 </p>
               </div>
             </div>
-
-            {/* Strength Indicator */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <div className="flex gap-1">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className={`w-1.5 h-4 rounded-full ${
-                        i <=
-                        (apiKeyStrength.label === "Strong"
-                          ? 3
-                          : apiKeyStrength.label === "Medium"
-                          ? 2
-                          : 1)
-                          ? apiKeyStrength.bg
-                          : "bg-gray-300 dark:bg-gray-600"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className={`text-xs font-medium ${apiKeyStrength.color}`}>
-                  {apiKeyStrength.label}
-                </span>
-              </div>
-            </div>
           </div>
 
           <div className="relative group">
@@ -147,33 +122,37 @@ const SecurityAndAuth: React.FC<SecurityAndAuthProps> = ({
               </code>
 
               <div className="flex items-center gap-1 flex-shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                  className="hover:bg-gray-200 dark:hover:bg-gray-700 transition-all group/btn"
-                  title={showApiKey ? "Hide API Key" : "Show API Key"}
-                >
-                  {showApiKey ? (
-                    <EyeOff className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover/btn:text-gray-900 dark:group-hover/btn:text-white" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover/btn:text-gray-900 dark:group-hover/btn:text-white" />
-                  )}
-                </Button>
+                {userRole !== "viewer" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    className="hover:bg-gray-200 dark:hover:bg-gray-700 transition-all group/btn"
+                    title={showApiKey ? "Hide API Key" : "Show API Key"}
+                  >
+                    {showApiKey ? (
+                      <EyeOff className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover/btn:text-gray-900 dark:group-hover/btn:text-white" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover/btn:text-gray-900 dark:group-hover/btn:text-white" />
+                    )}
+                  </Button>
+                )}
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopy(apiKey, "apiKey")}
-                  className="hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-all group/btn"
-                  title="Copy API Key"
-                >
-                  {copiedField === "apiKey" ? (
-                    <Check className="h-4 w-4 text-green-500 animate-in zoom-in" />
-                  ) : (
-                    <Copy className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover/btn:text-blue-600 dark:group-hover/btn:text-blue-400" />
-                  )}
-                </Button>
+                {userRole !== "viewer" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopy(apiKey, "apiKey")}
+                    className="hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-all group/btn"
+                    title="Copy API Key"
+                  >
+                    {copiedField === "apiKey" ? (
+                      <Check className="h-4 w-4 text-green-500 animate-in zoom-in" />
+                    ) : (
+                      <Copy className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover/btn:text-blue-600 dark:group-hover/btn:text-blue-400" />
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -235,35 +214,39 @@ const SecurityAndAuth: React.FC<SecurityAndAuthProps> = ({
               </code>
 
               <div className="flex items-center gap-1 flex-shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAuthSecret(!showAuthSecret)}
-                  className="hover:bg-gray-200 dark:hover:bg-gray-700 transition-all group/btn"
-                  title={
-                    showAuthSecret ? "Hide Auth Secret" : "Show Auth Secret"
-                  }
-                >
-                  {showAuthSecret ? (
-                    <EyeOff className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover/btn:text-gray-900 dark:group-hover/btn:text-white" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover/btn:text-gray-900 dark:group-hover/btn:text-white" />
-                  )}
-                </Button>
+                {userRole !== "viewer" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAuthSecret(!showAuthSecret)}
+                    className="hover:bg-gray-200 dark:hover:bg-gray-700 transition-all group/btn"
+                    title={
+                      showAuthSecret ? "Hide Auth Secret" : "Show Auth Secret"
+                    }
+                  >
+                    {showAuthSecret ? (
+                      <EyeOff className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover/btn:text-gray-900 dark:group-hover/btn:text-white" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover/btn:text-gray-900 dark:group-hover/btn:text-white" />
+                    )}
+                  </Button>
+                )}
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopy(authSecret, "authSecret")}
-                  className="hover:bg-purple-100 dark:hover:bg-purple-900/20 transition-all group/btn"
-                  title="Copy Auth Secret"
-                >
-                  {copiedField === "authSecret" ? (
-                    <Check className="h-4 w-4 text-green-500 animate-in zoom-in" />
-                  ) : (
-                    <Copy className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover/btn:text-purple-600 dark:group-hover/btn:text-purple-400" />
-                  )}
-                </Button>
+                {userRole !== "viewer" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopy(authSecret, "authSecret")}
+                    className="hover:bg-purple-100 dark:hover:bg-purple-900/20 transition-all group/btn"
+                    title="Copy Auth Secret"
+                  >
+                    {copiedField === "authSecret" ? (
+                      <Check className="h-4 w-4 text-green-500 animate-in zoom-in" />
+                    ) : (
+                      <Copy className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover/btn:text-purple-600 dark:group-hover/btn:text-purple-400" />
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           </div>

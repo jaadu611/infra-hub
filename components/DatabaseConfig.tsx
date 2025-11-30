@@ -25,11 +25,13 @@ import { toast } from "sonner";
 interface DatabaseConfigProps {
   mongoUrl: string;
   projectId: string;
+  userRole: "admin" | "editor" | "viewer";
 }
 
 const DatabaseConfig: React.FC<DatabaseConfigProps> = ({
   mongoUrl,
   projectId,
+  userRole,
 }) => {
   const [copied, setCopied] = useState(false);
   const [url, setUrl] = useState(mongoUrl);
@@ -73,7 +75,7 @@ const DatabaseConfig: React.FC<DatabaseConfigProps> = ({
 
       toast.success("MongoDB URL updated successfully!");
       setIsChanged(false);
-      setIsConnected(null); // Reset connection status after URL change
+      setIsConnected(null);
     } catch (err) {
       console.error(err);
       toast.error((err as Error).message || "Failed to update MongoDB URL");
@@ -89,10 +91,8 @@ const DatabaseConfig: React.FC<DatabaseConfigProps> = ({
       const res = await fetch(`/api/projects/connect/${projectId}`, {
         method: "POST",
       });
-      const data = await res.json();
 
-      if (!res.ok)
-        throw new Error(data.error || "Failed to verify MongoDB connection");
+      if (!res.ok) throw new Error("Failed to verify MongoDB connection");
 
       toast.success("Database connection verified successfully!");
       setIsConnected(true);
@@ -169,14 +169,14 @@ const DatabaseConfig: React.FC<DatabaseConfigProps> = ({
                 <>
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                   <span className="text-xs font-semibold text-green-700 dark:text-green-300">
-                    Connected
+                    Valid
                   </span>
                 </>
               ) : (
                 <>
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                   <span className="text-xs font-semibold text-red-700 dark:text-red-300">
-                    Disconnected
+                    Invalid
                   </span>
                 </>
               )}
@@ -195,37 +195,40 @@ const DatabaseConfig: React.FC<DatabaseConfigProps> = ({
             </label>
             <div className="flex items-center gap-2">
               {/* Show/Hide Toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowUrl(!showUrl)}
-                className="hover:bg-gray-200 dark:hover:bg-gray-700 transition-all group"
-                title={showUrl ? "Hide URL" : "Show URL"}
-              >
-                {showUrl ? (
-                  <EyeOff className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white" />
-                ) : (
-                  <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white" />
-                )}
-              </Button>
+              {userRole !== "viewer" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowUrl(!showUrl)}
+                  className="hover:bg-gray-200 dark:hover:bg-gray-700 transition-all group"
+                  title={showUrl ? "Hide URL" : "Show URL"}
+                >
+                  {showUrl ? (
+                    <EyeOff className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white" />
+                  )}
+                </Button>
+              )}
 
               {/* Copy Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCopy}
-                className="hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-all group"
-                title="Copy URL"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4 text-green-500 animate-in zoom-in" />
-                ) : (
-                  <Copy className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                )}
-              </Button>
+              {userRole !== "viewer" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopy}
+                  className="hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-all group"
+                  title="Copy URL"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 text-green-500 animate-in zoom-in" />
+                  ) : (
+                    <Copy className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                  )}
+                </Button>
+              )}
 
-              {/* Save Button (only shows when changed) */}
-              {isChanged && (
+              {isChanged && userRole !== "viewer" && (
                 <Button
                   variant="ghost"
                   size="sm"

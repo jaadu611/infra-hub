@@ -153,8 +153,6 @@ export default async function DashboardPage() {
 
   const { user, projects, documents, apiRequests, recentActivity } = data;
 
-  console.log(recentActivity);
-
   const allMembers = projects.flatMap((p) => p.members ?? []);
   const allUserIds = allMembers.map((m) => m._id).filter(Boolean);
   const uniqueUserIds = Array.from(new Set(allUserIds));

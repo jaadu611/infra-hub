@@ -19,7 +19,7 @@ export async function POST() {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
-      path: "/",
+      path: "/dashboard",
       expires: new Date(0),
     });
 
@@ -39,7 +39,7 @@ export async function POST() {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
-      path: "/",
+      path: "/dashboard",
       expires: new Date(0),
     });
     return res;

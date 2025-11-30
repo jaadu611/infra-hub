@@ -23,7 +23,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = session?.user;
 
   const mainItems = [
-    { title: "Home", url: "/", icon: Home },
+    { title: "Home", url: "/dashboard", icon: Home },
     { title: "Projects", url: "/projects", icon: Folder },
     { title: "API Requests", url: "/api-requests", icon: GitPullRequestIcon },
     { title: "Recent Activities", url: "/recent-activities", icon: Zap },
@@ -72,8 +72,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3 ml-auto">
             {user && (
               <Button
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="hover:text-red-400! hover:scale-110 dark:text-white bg-transparent hover:bg-transparent"
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="hover:text-red-400! hover:scale-110 text-black dark:text-white bg-transparent hover:bg-transparent"
               >
                 <LogOut className="h-5 w-5" />
               </Button>
@@ -111,7 +111,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 asChild
                 className="gap-2 py-2 px-4 bg-gradient-primary text-white hover:opacity-90 transition-opacity rounded-md"
               >
-                <Link href="/login">Get Started</Link>
+                <Link href="/">Get Started</Link>
               </Button>
             )}
           </div>

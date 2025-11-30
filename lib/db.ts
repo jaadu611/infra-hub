@@ -12,7 +12,7 @@ import APIRequest from "@/models/APIRequest";
 export interface Member {
   _id: string;
   name?: string;
-  user?: { _id: string; name?: string };
+  user?: { _id: string; name?: string; email?: string };
   email?: string;
   role?: "admin" | "editor" | "viewer";
 }
@@ -109,6 +109,7 @@ interface PopulatedDocument {
 }
 
 export interface ProjectType {
+  populate(arg0: string, arg1: string): unknown;
   apiRequests: number;
   pendingInvites: string[];
   _id: string;
@@ -147,8 +148,6 @@ export async function getUserDashboardData(
 ): Promise<DashboardData | null> {
   await connectDB();
 
-  console.log("🔍 Fetching dashboard data for:", email);
-
   const userDoc = (await User.findOne({ email })
     .populate({
       path: "projects",
@@ -160,7 +159,6 @@ export async function getUserDashboardData(
     .lean()) as UserType | null;
 
   if (!userDoc) {
-    console.log("⚠️ No user found");
     return null;
   }
 
@@ -258,14 +256,10 @@ export async function getUserDashboardData(
     time: act.createdAt?.toString() ?? new Date().toISOString(),
   }));
 
-  // --- 🔢 Total successful API requests (today)
   const totalApiRequests = apiStatsByProject.reduce(
     (sum, p) => sum + (p.totalRequests ?? 0),
     0
   );
-
-  console.log("📊 API Stats per project:", apiStatsByProject);
-  console.log("👥 Unique members:", uniqueMembers.length);
 
   return {
     user: { _id: userDoc._id.toString(), name: userDoc.name },
@@ -329,7 +323,7 @@ export async function deleteProjectDocuments(projectId: string) {
 export async function createProjectServer(data: CreateProjectData) {
   await connectDB();
 
-  const { projectName, email, mongoUrl, authJsSecret, description } = data;
+  const { projectName, email, mongoUrl, authJsSecret } = data;
   if (!projectName || !email) throw new Error("Missing required fields");
 
   const user = await User.findOne({ email });
@@ -346,81 +340,13 @@ export async function createProjectServer(data: CreateProjectData) {
     activities: [],
   });
 
-  const now = new Date();
-  const formattedDate = now.toLocaleString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-
-  const readmeContent = `# 🌟 Welcome to **${projectName}**
-
-${
-  description && description.trim().length > 0
-    ? description
-    : "_No description yet — tell your team what this project is about!_"
-}
-  
----
-
-## 🧭 Overview
-This space is your **project dashboard** — where ideas, documentation, and teamwork come together.  
-You can use this README to outline your goals, architecture, or roadmap.
-
----
-
-## 👥 Project Details
-- **Created by:** ${user.name} (${user.email})
-- **Created on:** ${formattedDate}
-
----
-
-## 🚀 Quick Start
-1. 🗂️ Add and organize your project documents  
-2. 🤝 Invite teammates to collaborate  
-3. ⚙️ Connect your database and API keys  
-4. 🧠 Start exploring with your Autonomous Research Agent  
-
----
-
-> 💡 **Tip:** Use Markdown to style your notes, code, and documentation beautifully.
-
----
-
-### 🧑‍💻 _Happy building — your project begins here!_
-`;
-
-  const initialDoc = await DocumentModel.create({
-    owner: user._id,
-    project: project._id,
-    name: `README - ${projectName}`,
-    content: readmeContent,
-  });
-
-  project.documents.push(initialDoc._id);
-  await project.save();
-
   user.projects.push(project._id);
   await user.save();
 
-  // 🧾 Record an activity for project creation
   await Activity.create({
     user: user._id,
     action: `Created project "${projectName}"`,
     collectionName: "Projects",
-    type: "create",
-    time: new Date(),
-  });
-
-  // 🧾 Record an activity for the initial README document creation
-  await Activity.create({
-    user: user._id,
-    action: `Created initial README for "${projectName}"`,
-    collectionName: "Documents",
     type: "create",
     time: new Date(),
   });

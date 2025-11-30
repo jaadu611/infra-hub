@@ -43,7 +43,7 @@ const LoginPage = () => {
         );
       } else {
         toast.success("Welcome Back!");
-        router.push("/");
+        router.push("/dashboard");
       }
     } catch (err) {
       toast.error("Login failed. Try again.");

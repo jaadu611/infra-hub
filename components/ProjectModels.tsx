@@ -25,6 +25,7 @@ import { toast } from "sonner";
 
 interface ProjectModelsProps {
   projectId: string;
+  userRole: "admin" | "editor" | "viewer";
 }
 
 interface Field {
@@ -47,7 +48,10 @@ const FIELD_TYPES = [
   { value: "Reference", label: "Reference", icon: "🔗" },
 ];
 
-const ProjectModels: React.FC<ProjectModelsProps> = ({ projectId }) => {
+const ProjectModels: React.FC<ProjectModelsProps> = ({
+  projectId,
+  userRole,
+}) => {
   const [models, setModels] = useState<Model[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -162,13 +166,15 @@ const ProjectModels: React.FC<ProjectModelsProps> = ({ projectId }) => {
               </div>
             </div>
 
-            <Button
-              onClick={() => setShowModal(true)}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 flex items-center px-6"
-            >
-              <Plus className="w-4 h-4" />
-              New Model
-            </Button>
+            {userRole !== "viewer" && (
+              <Button
+                onClick={() => setShowModal(true)}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 flex items-center px-6"
+              >
+                <Plus className="w-4 h-4" />
+                New Model
+              </Button>
+            )}
           </div>
         </CardHeader>
 
@@ -235,13 +241,22 @@ const ProjectModels: React.FC<ProjectModelsProps> = ({ projectId }) => {
                 Get started by creating your first data model to define your
                 database structure
               </p>
-              <Button
-                onClick={() => setShowModal(true)}
-                className="mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Create Your First Model
-              </Button>
+              {userRole !== "viewer" ? (
+                <Button
+                  onClick={() => setShowModal(true)}
+                  className="mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Create Your First Model
+                </Button>
+              ) : (
+                <Button
+                  className="mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
+                  disabled
+                >
+                  Contact Admin to Create Model
+                </Button>
+              )}
             </div>
           )}
         </CardContent>

@@ -2,29 +2,16 @@ import React from "react";
 import { notFound, redirect } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getDocumentDetails } from "@/lib/db";
-import {
-  ArrowLeft,
-  Code2,
-  Plus,
-  RefreshCcw,
-  Tag,
-  Trash2,
-  User,
-} from "lucide-react";
+import { Code2, Plus, RefreshCcw, Tag, Trash2, User } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownClient";
 import { connectDB } from "@/lib/mongodb";
 import Document from "@/models/Docs";
 import Project from "@/models/Project";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import Activity from "@/models/Activity";
 import userModel from "@/models/User";
 
-//
-// ✅ SERVER ACTION — deleteDocument
-//
 async function deleteDocument(formData: FormData) {
   "use server";
 
@@ -104,54 +91,35 @@ export default async function DocumentPage({
       <div className="flex flex-1 overflow-hidden">
         {/* MAIN CONTENT */}
         <Card className="flex-1 py-2 gap-0 overflow-y-auto m-0 mr-6 shadow-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <CardContent className="h-full overflow-y-auto prose dark:prose-invert max-w-none px-4 relative">
+          <CardContent className="h-full overflow-y-auto prose dark:prose-invert max-w-none p-4 relative">
             {/* 🔹 Top Toolbar (Back + Delete if owner) */}
-            <div className="flex items-center justify-between mb-2 sticky top-0 bg-gray-50 dark:bg-gray-800 z-20 py-2 px-1 border-b border-gray-200 dark:border-gray-700">
-              <Link
-                href={`/projects/${
-                  typeof document.project === "object"
-                    ? document?.project?._id
-                    : document.project
-                }`}
-              >
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="group mb-2 hover:border-blue-400 dark:hover:border-blue-600 transition-all"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-                  Back to Project
-                </Button>
-              </Link>
-
-              {isOwner && (
-                <form action={deleteDocument}>
+            {isOwner && (
+              <form action={deleteDocument}>
+                <input
+                  type="hidden"
+                  name="documentId"
+                  value={document._id.toString()}
+                />
+                {document.project && (
                   <input
                     type="hidden"
-                    name="documentId"
-                    value={document._id.toString()}
+                    name="projectId"
+                    value={
+                      typeof document.project === "object"
+                        ? document.project._id
+                        : document.project
+                    }
                   />
-                  {document.project && (
-                    <input
-                      type="hidden"
-                      name="projectId"
-                      value={
-                        typeof document.project === "object"
-                          ? document.project._id
-                          : document.project
-                      }
-                    />
-                  )}
-                  <button
-                    type="submit"
-                    title="Delete document"
-                    className="p-2 absolute top-2 right-0 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </form>
-              )}
-            </div>
+                )}
+                <button
+                  type="submit"
+                  title="Delete document"
+                  className="p-2 absolute top-2 right-0 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </form>
+            )}
 
             {/* 🔹 Document Content */}
             <MarkdownRenderer

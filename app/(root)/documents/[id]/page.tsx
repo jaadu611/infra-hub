@@ -82,8 +82,8 @@ async function deleteDocument(formData: FormData) {
   revalidatePath(`/projects/${projectId}`);
 }
 
-const Page = async ({ params }: { params: { id: string } }) => {
-  const { id } = params;
+const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params;
   await connectDB();
 
   const session = await auth();
@@ -94,7 +94,12 @@ const Page = async ({ params }: { params: { id: string } }) => {
       path: "documents",
       populate: { path: "owner", select: "_id name email" },
     })
+    .populate("members.user", "email")
     .lean<ProjectType | null>();
+
+  const userRole = projectData?.members?.find(
+    (m) => m?.user?.email === session?.user?.email
+  )?.role;
 
   if (!projectData) {
     return (
@@ -192,13 +197,15 @@ const Page = async ({ params }: { params: { id: string } }) => {
                 </span>
               </div>
             </div>
-            <Link
-              href={`/new-document/${project._id}`}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-purple-600 font-semibold hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl hover:scale-105"
-            >
-              <FileText className="w-5 h-5" />
-              New Document
-            </Link>
+            {userRole !== "viewer" && (
+              <Link
+                href={`/new-document/${project._id}`}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-purple-600 font-semibold hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <FileText className="w-5 h-5" />
+                New Document
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -251,27 +258,22 @@ const Page = async ({ params }: { params: { id: string } }) => {
                 <div className="relative space-y-4">
                   {/* Document Header */}
                   <div className="flex items-start gap-3 bg-none">
-                    <Link
-                      href={`/documents/view/${doc._id}`}
-                      className="flex-1 min-w-0"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-md">
-                          <FileText className="h-6 w-6 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-2 mb-1">
-                            {doc.name || "Untitled Document"}
-                          </h3>
-                          {isRecentlyUpdated && (
-                            <span className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium">
-                              <TrendingUp className="w-3 h-3" />
-                              Recently updated
-                            </span>
-                          )}
-                        </div>
+                    <div className="flex items-start gap-3">
+                      <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-md">
+                        <FileText className="h-6 w-6 text-white" />
                       </div>
-                    </Link>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-2 mb-1">
+                          {doc.name || "Untitled Document"}
+                        </h3>
+                        {isRecentlyUpdated && (
+                          <span className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                            <TrendingUp className="w-3 h-3" />
+                            Recently updated
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Action Buttons */}
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -394,7 +396,7 @@ const Page = async ({ params }: { params: { id: string } }) => {
 
                   {/* View Document Link */}
                   <Link
-                    href={`/documents/view/${doc._id}`}
+                    href={`/document/${doc._id}`}
                     className="block w-full py-2.5 text-center text-sm font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
                   >
                     View Document →
