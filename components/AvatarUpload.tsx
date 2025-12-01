@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Upload } from "lucide-react";
-import { uploadAvatar } from "@/actions/profile";
 import Image from "next/image";
+import { uploadAvatar } from "@/lib/db";
 
 interface AvatarUploadProps {
   currentImage?: string;

@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Save, User, Mail, Building } from "lucide-react";
-import { updateProfile } from "@/actions/profile";
 import { auth } from "@/auth";
 import { AvatarUpload } from "@/components/AvatarUpload";
+import { updateProfile } from "@/lib/db";
 
 type UserWithCompany = {
   name?: string;

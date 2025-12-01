@@ -62,16 +62,14 @@ const LandingPage = () => {
               </Link>
             </div>
 
-            {/* Hero Image/Illustration */}
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
               <div className="w-full p-4 bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10 dark:from-blue-600/20 dark:via-purple-600/20 dark:to-pink-600/20 flex items-center justify-center">
-                {/* You can replace this with an actual screenshot */}
                 <Image
                   src={"/preview.png"}
                   alt="preview"
                   height={800}
                   width={1200}
-                  loading="lazy"
+                  loading="eager"
                 />
               </div>
             </div>

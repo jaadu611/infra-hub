@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Mail, Lock, User } from "lucide-react";
+import { Mail, Lock, User, Github } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const SignupPage = () => {
@@ -56,7 +56,7 @@ const SignupPage = () => {
       if (result?.error) {
         toast.error("Login failed", { description: result.error });
       } else {
-        toast.success("Welcome Abroad!");
+        toast.success("Welcome aboard!");
         router.push("/dashboard");
       }
     } catch (err) {
@@ -84,7 +84,25 @@ const SignupPage = () => {
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* GitHub Login Button */}
+          <Button
+            type="button"
+            onClick={() => signIn("github")}
+            className="w-full bg-gray-800 border border-gray-700 hover:bg-gray-700 text-white flex items-center justify-center gap-2"
+          >
+            <Github className="h-5 w-5" />
+            Continue with GitHub
+          </Button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 my-4">
+            <div className="h-px bg-gray-700 w-full" />
+            <span className="text-gray-400 text-sm">or</span>
+            <div className="h-px bg-gray-700 w-full" />
+          </div>
+
+          {/* Signup Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-gray-300">
